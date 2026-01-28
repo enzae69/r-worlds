@@ -2,129 +2,70 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>r-world iPad Touch Paint</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Touch Paint Test</title>
 <style>
-  body { margin:0; font-family:sans-serif; background:#eee; overflow:hidden; }
-  #canvasViewport { width:100%; height:100vh; background:#fff; touch-action:none; -webkit-user-select:none; -webkit-touch-callout:none; }
-  canvas { width:100%; height:100%; display:block; image-rendering:pixelated; }
-  #ui { position:fixed; top:10px; left:10px; background:white; padding:8px; border-radius:8px; z-index:10; }
-  #colors button { width:24px; height:24px; border:none; margin:2px; cursor:pointer; }
+  body { margin:0; overflow:hidden; }
+  #canvas { width:100vw; height:100vh; display:block; background:#eee; touch-action:none; }
+  #colors { position:fixed; top:10px; left:10px; z-index:10; background:white; padding:5px; border-radius:5px; }
+  #colors button { width:24px; height:24px; margin:2px; border:none; cursor:pointer; }
 </style>
 </head>
 <body>
 
-<div id="ui">
-  🎨 Farben:
-  <div id="colors"></div>
-  👥 Online: <span id="online">1</span>
-</div>
+<div id="colors"></div>
+<canvas id="canvas"></canvas>
 
-<div id="canvasViewport">
-  <canvas id="canvas"></canvas>
-</div>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
 
-<script type="module">
-// ===== Firebase =====
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCXNvSbBsRVgyKJUmckxpm_WHhC6xflSTg",
-  authDomain: "r-world-3879d.firebaseapp.com",
-  projectId: "r-world-3879d",
-  storageBucket: "r-world-3879d.appspot.com",
-  messagingSenderId: "878075356607",
-  appId: "1:878075356607:web:c2177f3904858d50626d0a"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// ===== Canvas Setup =====
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-
-// Set correct canvas pixel size
 function resizeCanvas(){
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
-  drawAll();
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 }
-window.addEventListener("resize", resizeCanvas);
+window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-const PIXEL = 10;
-let scale = 1, offsetX=0, offsetY=0;
-
-// ===== Colors =====
+const PIXEL = 20;
+let currentColor = "#000";
 const palette = ["#000","#f00","#0f0","#00f","#ff0","#f0f","#0ff","#fff"];
-let currentColor = palette[0];
-const colorDiv = document.getElementById("colors");
+const colorDiv = document.getElementById('colors');
+
 palette.forEach(c=>{
-  const b=document.createElement("button");
-  b.style.background=c;
-  b.onclick=()=>currentColor=c;
+  const b = document.createElement('button');
+  b.style.background = c;
+  b.onclick = ()=> currentColor = c;
   colorDiv.appendChild(b);
 });
 
-// ===== Pixels =====
-const pixels=new Map();
-onSnapshot(collection(db,"pixels"),snap=>{
-  snap.docChanges().forEach(c=>pixels.set(c.doc.id,c.doc.data()));
-  drawAll();
-});
-
-function drawAll(){
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.setTransform(scale,0,0,scale,offsetX,offsetY);
-  pixels.forEach(p=>{
-    ctx.fillStyle=p.color;
-    ctx.fillRect(p.x*PIXEL,p.y*PIXEL,PIXEL,PIXEL);
-  });
+function drawPixel(x,y){
+  ctx.fillStyle = currentColor;
+  ctx.fillRect(x, y, PIXEL, PIXEL);
 }
 
-function placePixel(clientX,clientY){
-  const x=Math.floor((clientX-offsetX)/(PIXEL*scale));
-  const y=Math.floor((clientY-offsetY)/(PIXEL*scale));
-  const id=`${x}_${y}`;
-  setDoc(doc(db,"pixels",id),{x,y,color:currentColor,time:serverTimestamp()});
-}
-
-// ===== Touch + Mouse =====
+// ===== Touch Events =====
 canvas.addEventListener("touchstart", e=>{
   e.preventDefault();
-  placePixel(e.touches[0].clientX,e.touches[0].clientY);
+  for(const t of e.touches){
+    drawPixel(t.clientX, t.clientY);
+  }
 });
+
 canvas.addEventListener("touchmove", e=>{
   e.preventDefault();
-  placePixel(e.touches[0].clientX,e.touches[0].clientY);
+  for(const t of e.touches){
+    drawPixel(t.clientX, t.clientY);
+  }
 });
 
-canvas.addEventListener("pointerdown", e=>{
-  if(e.pointerType!=="touch") placePixel(e.clientX,e.clientY);
+// ===== Mouse (optional) =====
+canvas.addEventListener("mousedown", e=>{
+  drawPixel(e.clientX, e.clientY);
+  canvas.addEventListener("mousemove", onMouseMove);
 });
-canvas.addEventListener("pointermove", e=>{
-  if(e.buttons) placePixel(e.clientX,e.clientY);
-});
-
-// ===== Zoom =====
-canvas.addEventListener("wheel", e=>{
-  e.preventDefault();
-  scale*=e.deltaY<0?1.1:0.9;
-  drawAll();
-},{passive:false});
-
-// ===== Online Users =====
-const userId = localStorage.getItem("uid") || crypto.randomUUID();
-localStorage.setItem("uid",userId);
-const meRef = doc(db,"online",userId);
-setDoc(meRef,{time:serverTimestamp()});
-setInterval(()=>setDoc(meRef,{time:serverTimestamp()}),10000);
-onSnapshot(collection(db,"online"), snap=>{
-  document.getElementById("online").textContent = snap.size;
-});
+canvas.addEventListener("mouseup", ()=>canvas.removeEventListener("mousemove", onMouseMove));
+function onMouseMove(e){ drawPixel(e.clientX, e.clientY); }
 </script>
 
 </body>
