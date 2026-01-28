@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>r-world Firebase Touch Paint iPad Fix</title>
+<title>r-world Firebase Touch Paint + Zoom & Pan</title>
 <style>
   body { margin:0; overflow:hidden; }
   #canvas {
@@ -11,9 +11,9 @@
     height:100vh;
     display:block;
     background:#eee;
-    touch-action: none;           /* WICHTIG für iPad Touch */
-    -webkit-user-select: none;    /* verhindert Textauswahl */
-    -webkit-tap-highlight-color: transparent; /* entfernt graue Markierung */
+    touch-action: none;           
+    -webkit-user-select: none;    
+    -webkit-tap-highlight-color: transparent;
   }
   #colors {
     position:fixed; top:10px; left:10px; z-index:10;
@@ -32,7 +32,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Dein Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCXNvSbBsRVgyKJUmckxpm_WHhC6xflSTg",
   authDomain: "r-world-3879d.firebaseapp.com",
@@ -41,17 +40,22 @@ const firebaseConfig = {
   messagingSenderId: "878075356607",
   appId: "1:878075356607:web:c2177f3904858d50626d0a"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // ===== Canvas Setup =====
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const PIXEL = 40;  // Pixelgröße
+const PIXEL = 40;
 let currentColor = "#000";
-const pixels = new Map();  // Pixel-Map
+const pixels = new Map();
 
+// Zoom & Pan Variablen
+let scale = 1;
+let offsetX = 0;
+let offsetY = 0;
+
+// Resize Canvas
 function resizeCanvas(){
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -72,26 +76,30 @@ palette.forEach(c=>{
 
 // ===== Grid + Pixel Zeichnen =====
 function drawGrid(){
+  ctx.setTransform(scale,0,0,scale,offsetX,offsetY);
+  ctx.clearRect(-offsetX/scale,-offsetY/scale,canvas.width/scale,canvas.height/scale);
+
+  // Hintergrund
   ctx.fillStyle = "#eee";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillRect(0,0,canvas.width/scale,canvas.height/scale);
 
   // Rasterlinien
   ctx.strokeStyle = "#ccc";
-  ctx.lineWidth = 1;
-  for(let x=0;x<canvas.width;x+=PIXEL){
+  ctx.lineWidth = 1/scale;
+  for(let x=0;x<canvas.width/scale;x+=PIXEL){
     ctx.beginPath();
     ctx.moveTo(x,0);
-    ctx.lineTo(x,canvas.height);
+    ctx.lineTo(x,canvas.height/scale);
     ctx.stroke();
   }
-  for(let y=0;y<canvas.height;y+=PIXEL){
+  for(let y=0;y<canvas.height/scale;y+=PIXEL){
     ctx.beginPath();
     ctx.moveTo(0,y);
-    ctx.lineTo(canvas.width,y);
+    ctx.lineTo(canvas.width/scale,y);
     ctx.stroke();
   }
 
-  // Pixel aus Map zeichnen
+  // Pixel
   pixels.forEach((color,key)=>{
     const [px,py] = key.split('_').map(Number);
     ctx.fillStyle = color;
@@ -101,44 +109,91 @@ function drawGrid(){
 
 // ===== Firebase Live Pixel =====
 const pixelsCol = collection(db,"pixels");
-let firstLoad = true;
-
 onSnapshot(pixelsCol, snap=>{
   snap.docChanges().forEach(change=>{
     const data = change.doc.data();
     pixels.set(`${data.x}_${data.y}`, data.color);
   });
   drawGrid();
-  if(firstLoad){ resizeCanvas(); firstLoad = false; }
 });
 
-// ===== Pixel setzen mit iPad Touch Fix =====
+// ===== Pixel setzen =====
 function placePixel(clientX, clientY){
-  const rect = canvas.getBoundingClientRect();  // korrigiert Canvas-Koordinaten
-  const x = Math.floor((clientX - rect.left)/PIXEL);
-  const y = Math.floor((clientY - rect.top)/PIXEL);
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor((clientX - rect.left - offsetX)/ (PIXEL*scale));
+  const y = Math.floor((clientY - rect.top - offsetY)/ (PIXEL*scale));
   const id = `${x}_${y}`;
-  setDoc(doc(db,"pixels",id), { x, y, color: currentColor, time: serverTimestamp() });
+  setDoc(doc(db,"pixels",id), { x, y, color: currentColor, time: serverTimestamp() })
+    .catch(err => console.error("Firestore Write Error:", err));
 }
 
 // ===== Touch Events =====
+let lastTouch = null;
 canvas.addEventListener("touchstart", e=>{
-  e.preventDefault(); // verhindert Scroll/Zoom
-  for(const t of e.touches) placePixel(t.clientX, t.clientY);
+  e.preventDefault();
+  if(e.touches.length===1){
+    placePixel(e.touches[0].clientX, e.touches[0].clientY);
+  } else if(e.touches.length===2){
+    lastTouch = [...e.touches];
+  }
 });
 canvas.addEventListener("touchmove", e=>{
   e.preventDefault();
-  for(const t of e.touches) placePixel(t.clientX, t.clientY);
+  if(e.touches.length===1){
+    placePixel(e.touches[0].clientX, e.touches[0].clientY);
+  } else if(e.touches.length===2 && lastTouch){
+    // Pinch Zoom
+    const t1 = e.touches[0];
+    const t2 = e.touches[1];
+    const lt1 = lastTouch[0];
+    const lt2 = lastTouch[1];
+    const distOld = Math.hypot(lt2.clientX-lt1.clientX, lt2.clientY-lt1.clientY);
+    const distNew = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+    const zoomFactor = distNew/distOld;
+    scale *= zoomFactor;
+    scale = Math.max(0.2, Math.min(5, scale));
+    drawGrid();
+    lastTouch = [...e.touches];
+  }
+});
+canvas.addEventListener("touchend", e=>{
+  if(e.touches.length<2) lastTouch = null;
 });
 
 // ===== Mouse Events =====
+let isDragging = false;
+let lastMouse = null;
 canvas.addEventListener("mousedown", e=>{
-  placePixel(e.clientX, e.clientY);
-  canvas.addEventListener("mousemove", onMouseMove);
+  if(e.button===0){
+    placePixel(e.clientX, e.clientY);
+    isDragging = true;
+  } else if(e.button===1){
+    lastMouse = {x:e.clientX, y:e.clientY};
+  }
 });
-canvas.addEventListener("mouseup", ()=>canvas.removeEventListener("mousemove", onMouseMove));
-function onMouseMove(e){ placePixel(e.clientX, e.clientY); }
+canvas.addEventListener("mousemove", e=>{
+  if(isDragging){
+    placePixel(e.clientX, e.clientY);
+  } else if(lastMouse){
+    offsetX += e.clientX - lastMouse.x;
+    offsetY += e.clientY - lastMouse.y;
+    lastMouse = {x:e.clientX, y:e.clientY};
+    drawGrid();
+  }
+});
+canvas.addEventListener("mouseup", e=>{
+  isDragging=false; lastMouse=null;
+});
 
+// ===== Wheel Zoom =====
+canvas.addEventListener("wheel", e=>{
+  e.preventDefault();
+  const zoom = e.deltaY < 0 ? 1.1 : 0.9;
+  scale *= zoom;
+  scale = Math.max(0.2, Math.min(5, scale));
+  drawGrid();
+});
 </script>
+
 </body>
 </html>
