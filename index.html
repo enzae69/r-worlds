@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Touch Paint Test</title>
+<title>r-world Firebase Touch Paint</title>
 <style>
   body { margin:0; overflow:hidden; }
   #canvas { width:100vw; height:100vh; display:block; background:#eee; touch-action:none; }
@@ -16,18 +16,37 @@
 <div id="colors"></div>
 <canvas id="canvas"></canvas>
 
-<script>
+<script type="module">
+// ===== Firebase =====
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// **Dein Firebase Config**
+const firebaseConfig = {
+  apiKey: "AIzaSyCXNvSbBsRVgyKJUmckxpm_WHhC6xflSTg",
+  authDomain: "r-world-3879d.firebaseapp.com",
+  projectId: "r-world-3879d",
+  storageBucket: "r-world-3879d.appspot.com",
+  messagingSenderId: "878075356607",
+  appId: "1:878075356607:web:c2177f3904858d50626d0a"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ===== Canvas Setup =====
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
 function resizeCanvas(){
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+  drawGrid();
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-const PIXEL = 20;
+const PIXEL = 40; // Pixelgröße
 let currentColor = "#000";
 const palette = ["#000","#f00","#0f0","#00f","#ff0","#f0f","#0ff","#fff"];
 const colorDiv = document.getElementById('colors');
@@ -39,34 +58,71 @@ palette.forEach(c=>{
   colorDiv.appendChild(b);
 });
 
-function drawPixel(x,y){
-  ctx.fillStyle = currentColor;
-  ctx.fillRect(x, y, PIXEL, PIXEL);
+// ===== Pixel Storage =====
+const pixels = new Map();
+
+// Live Firebase Update
+const pixelsCol = collection(db,"pixels");
+onSnapshot(pixelsCol, snap=>{
+  snap.docChanges().forEach(change=>{
+    const data = change.doc.data();
+    pixels.set(`${data.x}_${data.y}`, data.color);
+  });
+  drawGrid();
+});
+
+// Draw Grid and Pixels
+function drawGrid(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Rasterlinien
+  ctx.strokeStyle = "#ccc";
+  ctx.lineWidth = 1;
+  for(let x=0;x<canvas.width;x+=PIXEL){
+    ctx.beginPath();
+    ctx.moveTo(x,0);
+    ctx.lineTo(x,canvas.height);
+    ctx.stroke();
+  }
+  for(let y=0;y<canvas.height;y+=PIXEL){
+    ctx.beginPath();
+    ctx.moveTo(0,y);
+    ctx.lineTo(canvas.width,y);
+    ctx.stroke();
+  }
+  // Pixel zeichnen
+  pixels.forEach((color,key)=>{
+    const [px,py] = key.split('_').map(Number);
+    ctx.fillStyle = color;
+    ctx.fillRect(px*PIXEL+1, py*PIXEL+1, PIXEL-1, PIXEL-1);
+  });
+}
+
+// Set Pixel Function
+function placePixel(clientX, clientY){
+  const x = Math.floor(clientX/PIXEL);
+  const y = Math.floor(clientY/PIXEL);
+  const id = `${x}_${y}`;
+  setDoc(doc(db,"pixels",id), { x, y, color: currentColor, time: serverTimestamp() });
 }
 
 // ===== Touch Events =====
 canvas.addEventListener("touchstart", e=>{
   e.preventDefault();
-  for(const t of e.touches){
-    drawPixel(t.clientX, t.clientY);
-  }
+  for(const t of e.touches) placePixel(t.clientX, t.clientY);
 });
-
 canvas.addEventListener("touchmove", e=>{
   e.preventDefault();
-  for(const t of e.touches){
-    drawPixel(t.clientX, t.clientY);
-  }
+  for(const t of e.touches) placePixel(t.clientX, t.clientY);
 });
 
-// ===== Mouse (optional) =====
+// ===== Mouse Events =====
 canvas.addEventListener("mousedown", e=>{
-  drawPixel(e.clientX, e.clientY);
+  placePixel(e.clientX, e.clientY);
   canvas.addEventListener("mousemove", onMouseMove);
 });
 canvas.addEventListener("mouseup", ()=>canvas.removeEventListener("mousemove", onMouseMove));
-function onMouseMove(e){ drawPixel(e.clientX, e.clientY); }
-</script>
+function onMouseMove(e){ placePixel(e.clientX, e.clientY); }
 
+</script>
 </body>
 </html>
