@@ -3,11 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>r-world Firebase Touch Paint</title>
+<title>r-world Firebase Touch Paint iPad Fix</title>
 <style>
   body { margin:0; overflow:hidden; }
-  #canvas { width:100vw; height:100vh; display:block; background:#eee; touch-action:none; }
-  #colors { position:fixed; top:10px; left:10px; z-index:10; background:white; padding:5px; border-radius:5px; }
+  #canvas {
+    width:100vw;
+    height:100vh;
+    display:block;
+    background:#eee;
+    touch-action: none;           /* WICHTIG für iPad Touch */
+    -webkit-user-select: none;    /* verhindert Textauswahl */
+    -webkit-tap-highlight-color: transparent; /* entfernt graue Markierung */
+  }
+  #colors {
+    position:fixed; top:10px; left:10px; z-index:10;
+    background:white; padding:5px; border-radius:5px;
+  }
   #colors button { width:24px; height:24px; margin:2px; border:none; cursor:pointer; }
 </style>
 </head>
@@ -17,11 +28,11 @@
 <canvas id="canvas"></canvas>
 
 <script type="module">
-// ===== Firebase =====
+// ===== Firebase Setup =====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// **Firebase Config von dir**
+// Dein Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCXNvSbBsRVgyKJUmckxpm_WHhC6xflSTg",
   authDomain: "r-world-3879d.firebaseapp.com",
@@ -37,10 +48,9 @@ const db = getFirestore(app);
 // ===== Canvas Setup =====
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-
-const PIXEL = 40; // Pixelgröße
+const PIXEL = 40;  // Pixelgröße
 let currentColor = "#000";
-const pixels = new Map(); // Pixel-Speicher
+const pixels = new Map();  // Pixel-Map
 
 function resizeCanvas(){
   canvas.width = window.innerWidth;
@@ -53,7 +63,6 @@ resizeCanvas();
 // ===== Farbpalette =====
 const palette = ["#000","#f00","#0f0","#00f","#ff0","#f0f","#0ff","#fff"];
 const colorDiv = document.getElementById('colors');
-
 palette.forEach(c=>{
   const b = document.createElement('button');
   b.style.background = c;
@@ -63,7 +72,6 @@ palette.forEach(c=>{
 
 // ===== Grid + Pixel Zeichnen =====
 function drawGrid(){
-  // Hintergrund
   ctx.fillStyle = "#eee";
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
@@ -83,7 +91,7 @@ function drawGrid(){
     ctx.stroke();
   }
 
-  // Pixel zeichnen
+  // Pixel aus Map zeichnen
   pixels.forEach((color,key)=>{
     const [px,py] = key.split('_').map(Number);
     ctx.fillStyle = color;
@@ -101,24 +109,21 @@ onSnapshot(pixelsCol, snap=>{
     pixels.set(`${data.x}_${data.y}`, data.color);
   });
   drawGrid();
-  // Erstes Resize nach Firebase, damit Canvas nicht leer ist
-  if(firstLoad){ 
-    resizeCanvas(); 
-    firstLoad = false; 
-  }
+  if(firstLoad){ resizeCanvas(); firstLoad = false; }
 });
 
-// ===== Pixel setzen =====
+// ===== Pixel setzen mit iPad Touch Fix =====
 function placePixel(clientX, clientY){
-  const x = Math.floor(clientX/PIXEL);
-  const y = Math.floor(clientY/PIXEL);
+  const rect = canvas.getBoundingClientRect();  // korrigiert Canvas-Koordinaten
+  const x = Math.floor((clientX - rect.left)/PIXEL);
+  const y = Math.floor((clientY - rect.top)/PIXEL);
   const id = `${x}_${y}`;
   setDoc(doc(db,"pixels",id), { x, y, color: currentColor, time: serverTimestamp() });
 }
 
 // ===== Touch Events =====
 canvas.addEventListener("touchstart", e=>{
-  e.preventDefault();
+  e.preventDefault(); // verhindert Scroll/Zoom
   for(const t of e.touches) placePixel(t.clientX, t.clientY);
 });
 canvas.addEventListener("touchmove", e=>{
