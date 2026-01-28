@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>r-world iPad</title>
+<title>r-world iPad fix</title>
 <style>
   body {
     margin: 0;
@@ -29,7 +29,7 @@
   }
   canvas {
     background: white;
-    touch-action: none;
+    touch-action: none; /* wichtig für iPad */
     image-rendering: pixelated;
     display: block;
   }
@@ -131,50 +131,53 @@ function drawAll(){
   });
 }
 
-// ===== PLACE PIXEL (iPad-kompatibel) =====
-function placePixel(e){
+// ===== PLACE PIXEL =====
+function placePixel(clientX, clientY){
   if(Date.now() - lastPlace < COOLDOWN*1000) return;
-
-  const x = Math.floor((e.clientX - offsetX) / (PIXEL*scale));
-  const y = Math.floor((e.clientY - offsetY) / (PIXEL*scale));
+  const x = Math.floor((clientX - offsetX) / (PIXEL*scale));
+  const y = Math.floor((clientY - offsetY) / (PIXEL*scale));
   const id = `${x}_${y}`;
-
   setDoc(doc(db,"pixels",id),{
     x, y, color: currentColor, time: serverTimestamp()
   });
-
   lastPlace = Date.now();
 }
 
-// Pointerdown Event für 1-Finger Malen
-canvas.addEventListener("pointerdown", e=>{
-  // 1 Finger = malen
-  if(e.pointerType === "touch" && e.isPrimary){
-    placePixel(e);
-  } else if(e.pointerType !== "touch"){
-    placePixel(e);
+// ===== TOUCH EVENTS (iPad) =====
+let lastPanX=0, lastPanY=0;
+
+canvas.addEventListener("touchstart", e=>{
+  e.preventDefault(); // wichtig für iPad
+  if(e.touches.length===1){
+    const t = e.touches[0];
+    placePixel(t.clientX, t.clientY);
+  } else if(e.touches.length===2){
+    const t1 = e.touches[0];
+    const t2 = e.touches[1];
+    lastPanX = (t1.clientX + t2.clientX)/2;
+    lastPanY = (t1.clientY + t2.clientY)/2;
   }
 });
 
-// ===== PAN & ZOOM (2 Finger / Maus) =====
-let isPanning=false, lastX=0, lastY=0;
-
-canvas.addEventListener("pointerdown", e=>{
-  if((e.pointerType==="touch" && !e.isPrimary) || e.buttons===2){
-    isPanning=true;
-    lastX=e.clientX; lastY=e.clientY;
+canvas.addEventListener("touchmove", e=>{
+  e.preventDefault();
+  if(e.touches.length===2){
+    const t1 = e.touches[0];
+    const t2 = e.touches[1];
+    const cx = (t1.clientX + t2.clientX)/2;
+    const cy = (t1.clientY + t2.clientY)/2;
+    offsetX += cx - lastPanX;
+    offsetY += cy - lastPanY;
+    lastPanX = cx;
+    lastPanY = cy;
+    drawAll();
   }
 });
 
-canvas.addEventListener("pointermove", e=>{
-  if(!isPanning) return;
-  offsetX += e.clientX-lastX;
-  offsetY += e.clientY-lastY;
-  lastX=e.clientX; lastY=e.clientY;
-  drawAll();
+// ===== MOUSE EVENTS =====
+canvas.addEventListener("pointerdown", e=>{
+  if(e.pointerType!=="touch") placePixel(e.clientX,e.clientY);
 });
-
-canvas.addEventListener("pointerup", ()=>isPanning=false);
 
 canvas.addEventListener("wheel", e=>{
   e.preventDefault();
@@ -191,7 +194,7 @@ onSnapshot(collection(db,"online"), snap=>{
   document.getElementById("online").textContent = snap.size;
 });
 
-console.log("r-world iPad FULL läuft ✅");
+console.log("r-world iPad fix FULL läuft ✅");
 </script>
 
 </body>
