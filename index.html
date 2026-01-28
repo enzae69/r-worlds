@@ -1,94 +1,181 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>r-world test</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f0f0f0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    canvas {
-      background: white;
-      border: 1px solid #000;
-      touch-action: none;
-      image-rendering: pixelated;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>r-world</title>
+<style>
+  body {
+    margin: 0;
+    font-family: sans-serif;
+    background: #eee;
+    overflow: hidden;
+  }
+  #ui {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: white;
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    z-index: 10;
+  }
+  #colors button {
+    width: 20px;
+    height: 20px;
+    border: none;
+    margin: 2px;
+  }
+  canvas {
+    background: white;
+    touch-action: none;
+    image-rendering: pixelated;
+  }
+</style>
 </head>
+
 <body>
 
-<h1>r-world test</h1>
-<p>Tippe auf das Feld 🎨</p>
+<div id="ui">
+  🎨 Farben:
+  <div id="colors"></div>
+  <div>⏱️ Cooldown: <span id="cd">0</span>s</div>
+  <div>👥 Online: <span id="online">1</span></div>
+</div>
 
-<canvas id="board" width="500" height="500"></canvas>
+<canvas id="board"></canvas>
 
 <script type="module">
-  // 🔥 Firebase Browser SDK
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import {
-    getFirestore,
-    doc,
-    setDoc,
-    onSnapshot,
-    collection
-  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getFirestore, doc, setDoc, onSnapshot,
+  collection, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // 🔧 Firebase Config
-  const firebaseConfig = {
-    apiKey: "AIzaSyCXNvSbBsRVgyKJUmckxpm_WHhC6xflSTg",
-    authDomain: "r-world-3879d.firebaseapp.com",
-    projectId: "r-world-3879d",
-    storageBucket: "r-world-3879d.appspot.com",
-    messagingSenderId: "878075356607",
-    appId: "1:878075356607:web:c2177f3904858d50626d0a"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyCXNvSbBsRVgyKJUmckxpm_WHhC6xflSTg",
+  authDomain: "r-world-3879d.firebaseapp.com",
+  projectId: "r-world-3879d",
+  storageBucket: "r-world-3879d.appspot.com",
+  messagingSenderId: "878075356607",
+  appId: "1:878075356607:web:c2177f3904858d50626d0a"
+};
 
-  // 🚀 Init
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  const canvas = document.getElementById("board");
-  const ctx = canvas.getContext("2d");
+// ====== USER ======
+const userId = localStorage.getItem("uid") || crypto.randomUUID();
+localStorage.setItem("uid", userId);
 
-  const PIXEL_SIZE = 10;
+// ====== CANVAS SETUP ======
+const canvas = document.getElementById("board");
+const ctx = canvas.getContext("2d");
+resize();
+window.addEventListener("resize", resize);
 
-  // 🎨 Klick / Touch → Pixel setzen
-  function handleDraw(e) {
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) / PIXEL_SIZE);
-    const y = Math.floor((e.clientY - rect.top) / PIXEL_SIZE);
+const PIXEL = 10;
+let scale = 1;
+let offsetX = 0;
+let offsetY = 0;
 
-    const id = `${x}_${y}`;
+function resize(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  drawAll();
+}
 
-    setDoc(doc(db, "pixels", id), {
-      x,
-      y,
-      color: "#000000"
-    });
-  }
+// ====== COLORS ======
+const palette = ["#000","#f00","#0f0","#00f","#ff0","#f0f","#0ff","#fff"];
+let currentColor = palette[0];
+const colorDiv = document.getElementById("colors");
 
-  canvas.addEventListener("click", handleDraw);
+palette.forEach(c=>{
+  const b=document.createElement("button");
+  b.style.background=c;
+  b.onclick=()=>currentColor=c;
+  colorDiv.appendChild(b);
+});
 
-  // 📡 Live-Updates (wie wplace)
-  onSnapshot(collection(db, "pixels"), snapshot => {
-    snapshot.docChanges().forEach(change => {
-      const { x, y, color } = change.doc.data();
-      ctx.fillStyle = color;
-      ctx.fillRect(
-        x * PIXEL_SIZE,
-        y * PIXEL_SIZE,
-        PIXEL_SIZE,
-        PIXEL_SIZE
-      );
-    });
+// ====== COOLDOWN ======
+const COOLDOWN = 10;
+let lastPlace = 0;
+setInterval(()=>{
+  const left = Math.max(0, COOLDOWN - Math.floor((Date.now()-lastPlace)/1000));
+  document.getElementById("cd").textContent = left;
+},500);
+
+// ====== PLACE PIXEL ======
+canvas.addEventListener("pointerdown", e=>{
+  if(Date.now()-lastPlace < COOLDOWN*1000) return;
+
+  const x = Math.floor((e.clientX-offsetX)/ (PIXEL*scale));
+  const y = Math.floor((e.clientY-offsetY)/ (PIXEL*scale));
+  const id = `${x}_${y}`;
+
+  setDoc(doc(db,"pixels",id),{
+    x,y,color:currentColor,
+    time: serverTimestamp()
   });
 
-  console.log("r-world läuft ✅");
-</script>
+  lastPlace = Date.now();
+});
 
+// ====== ZOOM ======
+canvas.addEventListener("wheel", e=>{
+  e.preventDefault();
+  scale *= e.deltaY < 0 ? 1.1 : 0.9;
+  drawAll();
+},{passive:false});
+
+// ====== PAN ======
+let dragging=false, lx, ly;
+canvas.addEventListener("pointerdown",e=>{
+  dragging=true; lx=e.clientX; ly=e.clientY;
+});
+canvas.addEventListener("pointermove",e=>{
+  if(!dragging) return;
+  offsetX += e.clientX-lx;
+  offsetY += e.clientY-ly;
+  lx=e.clientX; ly=e.clientY;
+  drawAll();
+});
+canvas.addEventListener("pointerup",()=>dragging=false);
+
+// ====== PIXELS ======
+const pixels = new Map();
+
+onSnapshot(collection(db,"pixels"), snap=>{
+  snap.docChanges().forEach(c=>{
+    pixels.set(c.doc.id, c.doc.data());
+  });
+  drawAll();
+});
+
+function drawAll(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.setTransform(scale,0,0,scale,offsetX,offsetY);
+
+  pixels.forEach(p=>{
+    ctx.fillStyle=p.color;
+    ctx.fillRect(p.x*PIXEL,p.y*PIXEL,PIXEL,PIXEL);
+  });
+}
+
+// ====== ONLINE USERS ======
+const meRef = doc(db,"online",userId);
+setDoc(meRef,{time:serverTimestamp()});
+
+setInterval(()=>{
+  setDoc(meRef,{time:serverTimestamp()});
+},10000);
+
+onSnapshot(collection(db,"online"), snap=>{
+  document.getElementById("online").textContent = snap.size;
+});
+
+console.log("r-world FULL läuft ✅");
+</script>
 </body>
 </html>
