@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>r-world</title>
+<title>r-world FULL</title>
 <style>
   body {
     margin: 0;
@@ -25,11 +25,13 @@
     height: 20px;
     border: none;
     margin: 2px;
+    cursor: pointer;
   }
   canvas {
     background: white;
     touch-action: none;
     image-rendering: pixelated;
+    display: block;
   }
 </style>
 </head>
@@ -52,6 +54,7 @@ import {
   collection, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// ===== FIREBASE CONFIG =====
 const firebaseConfig = {
   apiKey: "AIzaSyCXNvSbBsRVgyKJUmckxpm_WHhC6xflSTg",
   authDomain: "r-world-3879d.firebaseapp.com",
@@ -64,53 +67,78 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ====== USER ======
+// ===== USER-ID =====
 const userId = localStorage.getItem("uid") || crypto.randomUUID();
 localStorage.setItem("uid", userId);
 
-// ====== CANVAS SETUP ======
+// ===== CANVAS SETUP =====
 const canvas = document.getElementById("board");
 const ctx = canvas.getContext("2d");
-resize();
-window.addEventListener("resize", resize);
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
 
 const PIXEL = 10;
 let scale = 1;
 let offsetX = 0;
 let offsetY = 0;
 
-function resize(){
+function resizeCanvas(){
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   drawAll();
 }
 
-// ====== COLORS ======
+// ===== COLORS =====
 const palette = ["#000","#f00","#0f0","#00f","#ff0","#f0f","#0ff","#fff"];
 let currentColor = palette[0];
 const colorDiv = document.getElementById("colors");
 
 palette.forEach(c=>{
-  const b=document.createElement("button");
-  b.style.background=c;
-  b.onclick=()=>currentColor=c;
+  const b = document.createElement("button");
+  b.style.background = c;
+  b.onclick = ()=> currentColor = c;
   colorDiv.appendChild(b);
 });
 
-// ====== COOLDOWN ======
-const COOLDOWN = 10;
+// ===== COOLDOWN =====
+const COOLDOWN = 10; // Sekunden
 let lastPlace = 0;
 setInterval(()=>{
   const left = Math.max(0, COOLDOWN - Math.floor((Date.now()-lastPlace)/1000));
   document.getElementById("cd").textContent = left;
-},500);
+}, 500);
 
-// ====== PLACE PIXEL ======
-canvas.addEventListener("pointerdown", e=>{
-  if(Date.now()-lastPlace < COOLDOWN*1000) return;
+// ===== PIXELS =====
+const pixels = new Map();
 
-  const x = Math.floor((e.clientX-offsetX)/ (PIXEL*scale));
-  const y = Math.floor((e.clientY-offsetY)/ (PIXEL*scale));
+// Live-Updates
+onSnapshot(collection(db,"pixels"), snap=>{
+  snap.docChanges().forEach(c=>{
+    pixels.set(c.doc.id, c.doc.data());
+  });
+  drawAll();
+});
+
+// ===== DRAW FUNCTION =====
+function drawAll(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.setTransform(scale,0,0,scale,offsetX,offsetY);
+
+  pixels.forEach(p=>{
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x*PIXEL, p.y*PIXEL, PIXEL, PIXEL);
+  });
+}
+
+// ===== PLACE PIXEL =====
+canvas.addEventListener("pointerdown", e => {
+  // 1 Finger = malen
+  if(e.pointerType === "touch" && e.isPrimary === false) return;
+  if(Date.now() - lastPlace < COOLDOWN*1000) return;
+
+  const x = Math.floor((e.clientX - offsetX) / (PIXEL*scale));
+  const y = Math.floor((e.clientY - offsetY) / (PIXEL*scale));
   const id = `${x}_${y}`;
 
   setDoc(doc(db,"pixels",id),{
@@ -121,55 +149,38 @@ canvas.addEventListener("pointerdown", e=>{
   lastPlace = Date.now();
 });
 
-// ====== ZOOM ======
+// ===== PAN & ZOOM =====
+let isPanning = false, lastX=0, lastY=0;
+
+canvas.addEventListener("pointerdown", e=>{
+  if(e.buttons === 2 || (e.pointerType==="touch" && !e.isPrimary)) {
+    isPanning = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+  }
+});
+
+canvas.addEventListener("pointermove", e=>{
+  if(!isPanning) return;
+  offsetX += e.clientX - lastX;
+  offsetY += e.clientY - lastY;
+  lastX = e.clientX;
+  lastY = e.clientY;
+  drawAll();
+});
+
+canvas.addEventListener("pointerup", ()=> isPanning=false);
 canvas.addEventListener("wheel", e=>{
   e.preventDefault();
-  scale *= e.deltaY < 0 ? 1.1 : 0.9;
+  scale *= e.deltaY<0 ? 1.1 : 0.9;
   drawAll();
 },{passive:false});
 
-// ====== PAN ======
-let dragging=false, lx, ly;
-canvas.addEventListener("pointerdown",e=>{
-  dragging=true; lx=e.clientX; ly=e.clientY;
-});
-canvas.addEventListener("pointermove",e=>{
-  if(!dragging) return;
-  offsetX += e.clientX-lx;
-  offsetY += e.clientY-ly;
-  lx=e.clientX; ly=e.clientY;
-  drawAll();
-});
-canvas.addEventListener("pointerup",()=>dragging=false);
-
-// ====== PIXELS ======
-const pixels = new Map();
-
-onSnapshot(collection(db,"pixels"), snap=>{
-  snap.docChanges().forEach(c=>{
-    pixels.set(c.doc.id, c.doc.data());
-  });
-  drawAll();
-});
-
-function drawAll(){
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.setTransform(scale,0,0,scale,offsetX,offsetY);
-
-  pixels.forEach(p=>{
-    ctx.fillStyle=p.color;
-    ctx.fillRect(p.x*PIXEL,p.y*PIXEL,PIXEL,PIXEL);
-  });
-}
-
-// ====== ONLINE USERS ======
+// ===== ONLINE USERS =====
 const meRef = doc(db,"online",userId);
 setDoc(meRef,{time:serverTimestamp()});
 
-setInterval(()=>{
-  setDoc(meRef,{time:serverTimestamp()});
-},10000);
+setInterval(()=>setDoc(meRef,{time:serverTimestamp()}),10000);
 
 onSnapshot(collection(db,"online"), snap=>{
   document.getElementById("online").textContent = snap.size;
@@ -177,5 +188,6 @@ onSnapshot(collection(db,"online"), snap=>{
 
 console.log("r-world FULL läuft ✅");
 </script>
+
 </body>
 </html>
