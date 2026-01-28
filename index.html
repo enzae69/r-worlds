@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>r-world FULL</title>
+<title>r-world iPad</title>
 <style>
   body {
     margin: 0;
@@ -131,10 +131,8 @@ function drawAll(){
   });
 }
 
-// ===== PLACE PIXEL =====
-canvas.addEventListener("pointerdown", e => {
-  // 1 Finger = malen
-  if(e.pointerType === "touch" && e.isPrimary === false) return;
+// ===== PLACE PIXEL (iPad-kompatibel) =====
+function placePixel(e){
   if(Date.now() - lastPlace < COOLDOWN*1000) return;
 
   const x = Math.floor((e.clientX - offsetX) / (PIXEL*scale));
@@ -142,34 +140,42 @@ canvas.addEventListener("pointerdown", e => {
   const id = `${x}_${y}`;
 
   setDoc(doc(db,"pixels",id),{
-    x,y,color:currentColor,
-    time: serverTimestamp()
+    x, y, color: currentColor, time: serverTimestamp()
   });
 
   lastPlace = Date.now();
+}
+
+// Pointerdown Event für 1-Finger Malen
+canvas.addEventListener("pointerdown", e=>{
+  // 1 Finger = malen
+  if(e.pointerType === "touch" && e.isPrimary){
+    placePixel(e);
+  } else if(e.pointerType !== "touch"){
+    placePixel(e);
+  }
 });
 
-// ===== PAN & ZOOM =====
-let isPanning = false, lastX=0, lastY=0;
+// ===== PAN & ZOOM (2 Finger / Maus) =====
+let isPanning=false, lastX=0, lastY=0;
 
 canvas.addEventListener("pointerdown", e=>{
-  if(e.buttons === 2 || (e.pointerType==="touch" && !e.isPrimary)) {
-    isPanning = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
+  if((e.pointerType==="touch" && !e.isPrimary) || e.buttons===2){
+    isPanning=true;
+    lastX=e.clientX; lastY=e.clientY;
   }
 });
 
 canvas.addEventListener("pointermove", e=>{
   if(!isPanning) return;
-  offsetX += e.clientX - lastX;
-  offsetY += e.clientY - lastY;
-  lastX = e.clientX;
-  lastY = e.clientY;
+  offsetX += e.clientX-lastX;
+  offsetY += e.clientY-lastY;
+  lastX=e.clientX; lastY=e.clientY;
   drawAll();
 });
 
-canvas.addEventListener("pointerup", ()=> isPanning=false);
+canvas.addEventListener("pointerup", ()=>isPanning=false);
+
 canvas.addEventListener("wheel", e=>{
   e.preventDefault();
   scale *= e.deltaY<0 ? 1.1 : 0.9;
@@ -179,14 +185,13 @@ canvas.addEventListener("wheel", e=>{
 // ===== ONLINE USERS =====
 const meRef = doc(db,"online",userId);
 setDoc(meRef,{time:serverTimestamp()});
-
 setInterval(()=>setDoc(meRef,{time:serverTimestamp()}),10000);
 
 onSnapshot(collection(db,"online"), snap=>{
   document.getElementById("online").textContent = snap.size;
 });
 
-console.log("r-world FULL läuft ✅");
+console.log("r-world iPad FULL läuft ✅");
 </script>
 
 </body>
