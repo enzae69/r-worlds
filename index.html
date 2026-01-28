@@ -2,57 +2,53 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>r-world iPad fix FULL</title>
+<title>r-world iPad FULL fix</title>
 <style>
-  body {
-    margin: 0;
-    font-family: sans-serif;
-    background: #eee;
-    overflow: hidden;
-  }
-  #ui {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    background: white;
-    padding: 8px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.2);
-    z-index: 10;
-  }
-  #colors button {
-    width: 20px;
-    height: 20px;
-    border: none;
-    margin: 2px;
-    cursor: pointer;
-  }
-  canvas {
-    background: white;
-    touch-action: none;
-    image-rendering: pixelated;
-    display: block;
-  }
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: #eee;
+  overflow: hidden;
+}
+#ui {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: white;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  z-index: 10;
+}
+#colors button {
+  width: 20px;
+  height: 20px;
+  border: none;
+  margin: 2px;
+  cursor: pointer;
+}
+canvas {
+  background: white;
+  touch-action: none; /* wichtig für iPad */
+  image-rendering: pixelated;
+  display: block;
+}
 </style>
 </head>
-
 <body>
 
 <div id="ui">
-  🎨 Farben:
-  <div id="colors"></div>
-  <div>⏱️ Cooldown: <span id="cd">0</span>s</div>
-  <div>👥 Online: <span id="online">1</span></div>
+🎨 Farben:
+<div id="colors"></div>
+<div>⏱️ Cooldown: <span id="cd">0</span>s</div>
+<div>👥 Online: <span id="online">1</span></div>
 </div>
 
 <canvas id="board"></canvas>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getFirestore, doc, setDoc, onSnapshot,
-  collection, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, onSnapshot, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // ===== Firebase Config =====
 const firebaseConfig = {
@@ -100,7 +96,7 @@ palette.forEach(c => {
 });
 
 // ===== Cooldown =====
-const COOLDOWN = 10; // Sekunden
+const COOLDOWN = 10;
 let lastPlace = 0;
 setInterval(() => {
   const left = Math.max(0, COOLDOWN - Math.floor((Date.now()-lastPlace)/1000));
@@ -109,30 +105,21 @@ setInterval(() => {
 
 // ===== Pixels =====
 const pixels = new Map();
-
-// Firestore live updates
 onSnapshot(collection(db,"pixels"), snap => {
-  snap.docChanges().forEach(c => {
-    pixels.set(c.doc.id, c.doc.data());
-  });
+  snap.docChanges().forEach(c => pixels.set(c.doc.id, c.doc.data()));
   drawAll();
 });
 
-// ===== Draw Function =====
 function drawAll() {
   ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.setTransform(scale,0,0,scale,offsetX,offsetY);
-
-  pixels.forEach(p => {
-    ctx.fillStyle = p.color;
-    ctx.fillRect(p.x*PIXEL, p.y*PIXEL, PIXEL, PIXEL);
-  });
+  pixels.forEach(p => ctx.fillRect(p.x*PIXEL,p.y*PIXEL,PIXEL,PIXEL), ctx.fillStyle=p.color);
 }
 
 // ===== Place Pixel =====
-function placePixel(clientX, clientY) {
-  if(Date.now()-lastPlace < COOLDOWN*1000) return;
+function placePixel(clientX, clientY){
+  if(Date.now() - lastPlace < COOLDOWN*1000) return;
   const x = Math.floor((clientX-offsetX)/(PIXEL*scale));
   const y = Math.floor((clientY-offsetY)/(PIXEL*scale));
   const id = `${x}_${y}`;
@@ -142,45 +129,40 @@ function placePixel(clientX, clientY) {
   lastPlace = Date.now();
 }
 
-// ===== Touch Events (iPad) =====
-let lastPanX = 0, lastPanY = 0;
-
-canvas.addEventListener("touchstart", e => {
+// ===== Touch Events (iPad sicher) =====
+let lastPanX=0,lastPanY=0;
+canvas.addEventListener("touchstart", e=>{
   e.preventDefault();
-  if(e.touches.length === 1) {
-    const t = e.touches[0];
-    placePixel(t.clientX, t.clientY);
-  } else if(e.touches.length === 2) {
-    const t1 = e.touches[0];
-    const t2 = e.touches[1];
-    lastPanX = (t1.clientX + t2.clientX)/2;
-    lastPanY = (t1.clientY + t2.clientY)/2;
+  if(e.touches.length===1){
+    placePixel(e.touches[0].clientX,e.touches[0].clientY);
+  } else if(e.touches.length===2){
+    const t1 = e.touches[0], t2 = e.touches[1];
+    lastPanX=(t1.clientX+t2.clientX)/2;
+    lastPanY=(t1.clientY+t2.clientY)/2;
   }
 });
 
-canvas.addEventListener("touchmove", e => {
+canvas.addEventListener("touchmove", e=>{
   e.preventDefault();
-  if(e.touches.length === 2){
-    const t1 = e.touches[0];
-    const t2 = e.touches[1];
-    const cx = (t1.clientX + t2.clientX)/2;
-    const cy = (t1.clientY + t2.clientY)/2;
-    offsetX += cx - lastPanX;
-    offsetY += cy - lastPanY;
-    lastPanX = cx;
-    lastPanY = cy;
+  if(e.touches.length===2){
+    const t1=e.touches[0], t2=e.touches[1];
+    const cx=(t1.clientX+t2.clientX)/2;
+    const cy=(t1.clientY+t2.clientY)/2;
+    offsetX += cx-lastPanX;
+    offsetY += cy-lastPanY;
+    lastPanX=cx; lastPanY=cy;
     drawAll();
   }
 });
 
 // ===== Mouse Events =====
-canvas.addEventListener("pointerdown", e => {
-  if(e.pointerType !== "touch") placePixel(e.clientX, e.clientY);
+canvas.addEventListener("pointerdown", e=>{
+  if(e.pointerType!=="touch") placePixel(e.clientX,e.clientY);
 });
 
-canvas.addEventListener("wheel", e => {
+canvas.addEventListener("wheel", e=>{
   e.preventDefault();
-  scale *= e.deltaY<0 ? 1.1 : 0.9;
+  scale *= e.deltaY<0?1.1:0.9;
   drawAll();
 },{passive:false});
 
@@ -195,6 +177,5 @@ onSnapshot(collection(db,"online"), snap=>{
 
 console.log("r-world iPad FULL fix läuft ✅");
 </script>
-
 </body>
 </html>
