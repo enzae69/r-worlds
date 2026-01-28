@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Wplace Color Converter + Canvas</title>
+<title>r-world iPad Touch Paint</title>
 <style>
-  body { margin:0; font-family:sans-serif; }
-  #canvasViewport { width:100%; height:80vh; background:#eee; touch-action:none; }
-  canvas { width:100%; height:100%; display:block; image-rendering: pixelated; }
+  body { margin:0; font-family:sans-serif; background:#eee; overflow:hidden; }
+  #canvasViewport { width:100%; height:100vh; background:#fff; touch-action:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+  canvas { width:100%; height:100%; display:block; image-rendering:pixelated; }
   #ui { position:fixed; top:10px; left:10px; background:white; padding:8px; border-radius:8px; z-index:10; }
-  #colors button { width:20px; height:20px; border:none; margin:2px; cursor:pointer; }
+  #colors button { width:24px; height:24px; border:none; margin:2px; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -17,7 +17,7 @@
 <div id="ui">
   🎨 Farben:
   <div id="colors"></div>
-  <div>👥 Online: <span id="online">1</span></div>
+  👥 Online: <span id="online">1</span>
 </div>
 
 <div id="canvasViewport">
@@ -44,20 +44,27 @@ const db = getFirestore(app);
 // ===== Canvas Setup =====
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-canvas.width = canvas.offsetWidth;
-canvas.height = canvas.offsetHeight;
+
+// Set correct canvas pixel size
+function resizeCanvas(){
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+  drawAll();
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
 
 const PIXEL = 10;
-let scale = 1, offsetX = 0, offsetY = 0;
+let scale = 1, offsetX=0, offsetY=0;
 
 // ===== Colors =====
 const palette = ["#000","#f00","#0f0","#00f","#ff0","#f0f","#0ff","#fff"];
 let currentColor = palette[0];
 const colorDiv = document.getElementById("colors");
 palette.forEach(c=>{
-  const b = document.createElement("button");
-  b.style.background = c;
-  b.onclick = ()=> currentColor=c;
+  const b=document.createElement("button");
+  b.style.background=c;
+  b.onclick=()=>currentColor=c;
   colorDiv.appendChild(b);
 });
 
@@ -85,49 +92,40 @@ function placePixel(clientX,clientY){
   setDoc(doc(db,"pixels",id),{x,y,color:currentColor,time:serverTimestamp()});
 }
 
-// ===== Touch Events =====
-let lastPanX=0,lastPanY=0;
-canvas.addEventListener("touchstart",e=>{
+// ===== Touch + Mouse =====
+canvas.addEventListener("touchstart", e=>{
   e.preventDefault();
-  if(e.touches.length===1) placePixel(e.touches[0].clientX,e.touches[0].clientY);
-  else if(e.touches.length===2){
-    const t1 = e.touches[0], t2 = e.touches[1];
-    lastPanX=(t1.clientX+t2.clientX)/2;
-    lastPanY=(t1.clientY+t2.clientY)/2;
-  }
+  placePixel(e.touches[0].clientX,e.touches[0].clientY);
 });
-canvas.addEventListener("touchmove",e=>{
+canvas.addEventListener("touchmove", e=>{
   e.preventDefault();
-  if(e.touches.length===2){
-    const t1=e.touches[0],t2=e.touches[1];
-    const cx=(t1.clientX+t2.clientX)/2;
-    const cy=(t1.clientY+t2.clientY)/2;
-    offsetX+=cx-lastPanX;
-    offsetY+=cy-lastPanY;
-    lastPanX=cx; lastPanY=cy;
-    drawAll();
-  }
+  placePixel(e.touches[0].clientX,e.touches[0].clientY);
 });
 
-// ===== Mouse =====
-canvas.addEventListener("pointerdown",e=>{
+canvas.addEventListener("pointerdown", e=>{
   if(e.pointerType!=="touch") placePixel(e.clientX,e.clientY);
 });
-canvas.addEventListener("wheel",e=>{
+canvas.addEventListener("pointermove", e=>{
+  if(e.buttons) placePixel(e.clientX,e.clientY);
+});
+
+// ===== Zoom =====
+canvas.addEventListener("wheel", e=>{
   e.preventDefault();
   scale*=e.deltaY<0?1.1:0.9;
   drawAll();
 },{passive:false});
 
 // ===== Online Users =====
-const userId=localStorage.getItem("uid")||crypto.randomUUID();
+const userId = localStorage.getItem("uid") || crypto.randomUUID();
 localStorage.setItem("uid",userId);
-const meRef=doc(db,"online",userId);
+const meRef = doc(db,"online",userId);
 setDoc(meRef,{time:serverTimestamp()});
 setInterval(()=>setDoc(meRef,{time:serverTimestamp()}),10000);
-onSnapshot(collection(db,"online"),snap=>{
-  document.getElementById("online").textContent=snap.size;
+onSnapshot(collection(db,"online"), snap=>{
+  document.getElementById("online").textContent = snap.size;
 });
 </script>
+
 </body>
 </html>
