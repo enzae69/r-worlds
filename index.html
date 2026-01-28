@@ -21,7 +21,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// **Dein Firebase Config**
+// **Firebase Config von dir**
 const firebaseConfig = {
   apiKey: "AIzaSyCXNvSbBsRVgyKJUmckxpm_WHhC6xflSTg",
   authDomain: "r-world-3879d.firebaseapp.com",
@@ -38,6 +38,10 @@ const db = getFirestore(app);
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
+const PIXEL = 40; // Pixelgröße
+let currentColor = "#000";
+const pixels = new Map(); // Pixel-Speicher
+
 function resizeCanvas(){
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -46,8 +50,7 @@ function resizeCanvas(){
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-const PIXEL = 40; // Pixelgröße
-let currentColor = "#000";
+// ===== Farbpalette =====
 const palette = ["#000","#f00","#0f0","#00f","#ff0","#f0f","#0ff","#fff"];
 const colorDiv = document.getElementById('colors');
 
@@ -58,22 +61,12 @@ palette.forEach(c=>{
   colorDiv.appendChild(b);
 });
 
-// ===== Pixel Storage =====
-const pixels = new Map();
-
-// Live Firebase Update
-const pixelsCol = collection(db,"pixels");
-onSnapshot(pixelsCol, snap=>{
-  snap.docChanges().forEach(change=>{
-    const data = change.doc.data();
-    pixels.set(`${data.x}_${data.y}`, data.color);
-  });
-  drawGrid();
-});
-
-// Draw Grid and Pixels
+// ===== Grid + Pixel Zeichnen =====
 function drawGrid(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Hintergrund
+  ctx.fillStyle = "#eee";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
   // Rasterlinien
   ctx.strokeStyle = "#ccc";
   ctx.lineWidth = 1;
@@ -89,6 +82,7 @@ function drawGrid(){
     ctx.lineTo(canvas.width,y);
     ctx.stroke();
   }
+
   // Pixel zeichnen
   pixels.forEach((color,key)=>{
     const [px,py] = key.split('_').map(Number);
@@ -97,7 +91,24 @@ function drawGrid(){
   });
 }
 
-// Set Pixel Function
+// ===== Firebase Live Pixel =====
+const pixelsCol = collection(db,"pixels");
+let firstLoad = true;
+
+onSnapshot(pixelsCol, snap=>{
+  snap.docChanges().forEach(change=>{
+    const data = change.doc.data();
+    pixels.set(`${data.x}_${data.y}`, data.color);
+  });
+  drawGrid();
+  // Erstes Resize nach Firebase, damit Canvas nicht leer ist
+  if(firstLoad){ 
+    resizeCanvas(); 
+    firstLoad = false; 
+  }
+});
+
+// ===== Pixel setzen =====
 function placePixel(clientX, clientY){
   const x = Math.floor(clientX/PIXEL);
   const y = Math.floor(clientY/PIXEL);
