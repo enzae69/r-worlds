@@ -1,198 +1,573 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <title>Pixel World – Light Mode</title>
-  <style>
-    body { margin:0; overflow:hidden; background:#f8f9fc; font-family:system-ui, sans-serif; color:#333; }
-    #canvas { width:100vw; height:100vh; display:block; touch-action:none; image-rendering:pixelated; background:#e8ecff; }
-    #gui {
-      position:fixed; top:16px; left:16px; z-index:100;
-      background:rgba(255,255,255,0.96); padding:16px 20px; border-radius:16px;
-      box-shadow:0 6px 24px rgba(0,0,0,0.12); border:1px solid #d0d8e8; min-width:260px;
-      backdrop-filter:blur(10px);
-    }
-    #colors { display:grid; grid-template-columns:repeat(5, 40px); gap:10px; margin:14px 0 12px; }
-    #colors button {
-      width:40px; height:40px; border:2px solid #e0e0e0; border-radius:10px;
-      cursor:pointer; transition:all 0.14s; box-shadow:0 2px 6px rgba(0,0,0,0.08);
-    }
-    #colors button:hover { transform:scale(1.14); border-color:#aaa; }
-    #colors button.selected { border-color:#0066ff; box-shadow:0 0 0 3px rgba(0,102,255,0.25); }
-    #status { font-size:0.96rem; margin:10px 0; color:#28a745; font-weight:500; }
-    .info { font-size:0.92rem; line-height:1.5; margin-top:14px; border-top:1px solid #e0e0e0; padding-top:12px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R/Place - Pixel Canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0a0e27;
+            --bg-medium: #1a1f3a;
+            --accent-cyan: #00d9ff;
+            --accent-pink: #ff006e;
+            --accent-yellow: #ffbe0b;
+            --text-bright: #ffffff;
+            --text-dim: #8892b0;
+            --grid-color: rgba(255, 255, 255, 0.05);
+            --shadow-glow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1535 100%);
+            font-family: 'VT323', monospace;
+            color: var(--text-bright);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 217, 255, 0.03) 2px, rgba(0, 217, 255, 0.03) 4px),
+                radial-gradient(circle at 50% 50%, transparent 0%, rgba(10, 14, 39, 0.8) 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: slideDown 0.8s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-pink), var(--accent-yellow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.5));
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeIn 1s ease-out 0.3s both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .canvas-container {
+            background: var(--bg-medium);
+            border: 3px solid var(--accent-cyan);
+            box-shadow: 
+                var(--shadow-glow),
+                inset 0 0 50px rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 8px;
+            position: relative;
+            animation: scaleIn 0.6s ease-out 0.5s both;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            background: #000;
+            box-shadow: inset 0 0 30px rgba(0, 217, 255, 0.2);
+        }
+
+        #pixelCanvas {
+            display: block;
+            cursor: crosshair;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .controls {
+            background: var(--bg-medium);
+            border: 3px solid var(--accent-pink);
+            box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+            padding: 25px;
+            border-radius: 8px;
+            min-width: 280px;
+            animation: slideLeft 0.8s ease-out 0.6s both;
+        }
+
+        @keyframes slideLeft {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .section-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            color: var(--accent-yellow);
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(255, 190, 11, 0.5);
+            letter-spacing: 1px;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 25px;
+        }
+
+        .color-btn {
+            width: 100%;
+            aspect-ratio: 1;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 16px rgba(255, 255, 255, 0.3);
+        }
+
+        .color-btn.selected {
+            border-color: var(--text-bright);
+            box-shadow: 
+                0 0 20px rgba(255, 255, 255, 0.6),
+                inset 0 0 10px rgba(255, 255, 255, 0.2);
+            transform: scale(1.15);
+        }
+
+        .color-btn::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .color-btn.selected::after {
+            border-color: var(--accent-cyan);
+            opacity: 1;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.5;
+            }
+        }
+
+        .info-panel {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 6px;
+            padding: 15px;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            box-shadow: inset 0 0 20px rgba(0, 217, 255, 0.1);
+        }
+
+        .info-label {
+            color: var(--accent-yellow);
+            text-shadow: 0 0 5px rgba(255, 190, 11, 0.5);
+        }
+
+        .info-value {
+            color: var(--text-bright);
+            font-weight: bold;
+        }
+
+        .pixel-info {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.5rem;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 20px rgba(0, 217, 255, 0.8);
+            z-index: 1000;
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .subtitle {
+                font-size: 1.2rem;
+            }
+
+            .main-content {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .controls {
+                width: 100%;
+                max-width: 400px;
+            }
+
+            #pixelCanvas {
+                max-width: 100%;
+                height: auto;
+            }
+        }
+
+        .username-input {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'VT323', monospace;
+            font-size: 1.3rem;
+            color: var(--text-bright);
+            width: 100%;
+            margin-bottom: 20px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .username-input:focus {
+            border-color: var(--accent-pink);
+            box-shadow: 0 0 15px rgba(255, 0, 110, 0.5);
+        }
+
+        .username-input::placeholder {
+            color: var(--text-dim);
+        }
+    </style>
 </head>
 <body>
-<div id="gui">
-  <strong>Farbe</strong>
-  <div id="colors"></div>
-  <div id="status">Bereit – fang an!</div>
-  <div class="info">
-    <div>Verfügbare Pixel: <span id="charges">20</span>/20</div>
-    <div>Platziert: <span id="placed">0</span></div>
-  </div>
-</div>
+    <div class="loading" id="loading">LADE...</div>
 
-<canvas id="canvas"></canvas>
+    <div class="container hidden" id="mainContainer">
+        <header>
+            <h1>R/PLACE</h1>
+            <p class="subtitle">Pixel für Pixel gemeinsam erstellt</p>
+        </header>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        <div class="main-content">
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="pixelCanvas" width="1000" height="1000"></canvas>
+                </div>
+            </div>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCXNvSbBsRVgyKJUmckxpm_WHhC6xflSTg",
-  authDomain: "r-world-3879d.firebaseapp.com",
-  projectId: "r-world-3879d",
-  storageBucket: "r-world-3879d.appspot.com",
-  messagingSenderId: "878075356607",
-  appId: "1:878075356607:web:c2177f3904858d50626d0a"
-};
+            <div class="controls">
+                <div class="section-title">FARBEN</div>
+                <div class="color-palette" id="colorPalette"></div>
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+                <div class="section-title">DEIN NAME</div>
+                <input 
+                    type="text" 
+                    id="usernameInput" 
+                    class="username-input" 
+                    placeholder="Benutzername..." 
+                    maxlength="20"
+                >
 
-// Vars
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const status = document.getElementById('status');
-const chargesEl = document.getElementById('charges');
-const placedEl = document.getElementById('placed');
+                <div class="info-panel">
+                    <div class="info-label">PIXEL-INFO</div>
+                    <div class="pixel-info" id="pixelInfo">
+                        Klicke auf ein Pixel für Details
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-const PIXEL_SIZE = 16;
-let currentColor = "#000000";
-let pixels = new Map();
-let scale = 1;
-let offsetX = 0;
-let offsetY = 0;
-let isDirty = true;
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue, set, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-let charges = 20;
-let placed = 0;
-let uid = null; // wird später gesetzt
+        const firebaseConfig = {
+            apiKey: "AIzaSyCXNvSbBsRVgyKJUmckxpm_WHhC6xflSTg",
+            authDomain: "r-world-3879d.firebaseapp.com",
+            projectId: "r-world-3879d",
+            storageBucket: "r-world-3879d.appspot.com",
+            messagingSenderId: "878075356607",
+            appId: "1:878075356607:web:c2177f3904858d50626d0a"
+        };
 
-// Farbpalette
-const palette = ["#000","#fff","#f00","#0f0","#00f","#ff0","#f0f","#0ff","#fa0","#0fa","#a0f","#f80","#c71585","#32cd32","#4169e1","#808080"];
-const colorDiv = document.getElementById('colors');
-palette.forEach(c => {
-  const btn = document.createElement('button');
-  btn.style.background = c;
-  btn.onclick = () => {
-    currentColor = c;
-    document.querySelectorAll('#colors button').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-  };
-  colorDiv.appendChild(btn);
-});
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
 
-// Resize + Draw (wie vorher – ich kürze es hier)
-function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; isDirty = true; }
-window.addEventListener('resize', resize); resize();
+        const COLORS = [
+            '#FF0000', '#FF8800', '#FFFF00', '#88FF00',
+            '#00FF00', '#00FF88', '#00FFFF', '#0088FF',
+            '#0000FF', '#8800FF', '#FF00FF', '#FF0088',
+            '#FFFFFF', '#CCCCCC', '#888888', '#444444',
+            '#000000', '#8B4513', '#FFB6C1', '#FFA500'
+        ];
 
-function draw() {
-  if (!isDirty) return requestAnimationFrame(draw);
-  isDirty = false;
-  // ... (dein draw-Code von vorher – Hintergrund, Grid, Pixel zeichnen)
-  // Kopiere den draw-Block aus deiner letzten Version hier rein, falls nötig
-  requestAnimationFrame(draw);
-}
-draw();
+        const CANVAS_SIZE = 100;
+        const PIXEL_SIZE = 10;
 
-// Anonymes Login – läuft im Hintergrund, blockiert nichts
-signInAnonymously(auth).catch(err => {
-  console.error("Anon login fehlgeschlagen:", err);
-  // Nur in Console loggen – kein nerviger Status
-});
+        const canvas = document.getElementById('pixelCanvas');
+        const ctx = canvas.getContext('2d');
+        const colorPalette = document.getElementById('colorPalette');
+        const pixelInfo = document.getElementById('pixelInfo');
+        const usernameInput = document.getElementById('usernameInput');
+        const loading = document.getElementById('loading');
+        const mainContainer = document.getElementById('mainContainer');
 
-onAuthStateChanged(auth, user => {
-  if (user) {
-    uid = user.uid;
-    console.log("Angemeldet als:", uid);
-    // Optional: Lade User-Daten, wenn du willst
-  } else {
-    console.log("Kein User (noch nicht angemeldet)");
-  }
-});
+        let selectedColor = COLORS[0];
+        let currentUsername = localStorage.getItem('rplace_username') || '';
+        let pixelData = {};
+        let canvasReady = false;
 
-// Pixels live laden
-onSnapshot(collection(db, "pixels"), snap => {
-  snap.docChanges().forEach(ch => {
-    const d = ch.doc.data();
-    const key = `${d.x}_${d.y}`;
-    if (ch.type === "removed") pixels.delete(key);
-    else pixels.set(key, d.color);
-  });
-  isDirty = true;
-}, err => {
-  console.error("Firestore Fehler:", err);
-  if (err.code === 'permission-denied') {
-    status.textContent = "Keine Schreib-Rechte – check Firebase Rules!";
-    status.style.color = "#dc3545";
-  }
-});
+        usernameInput.value = currentUsername;
 
-// Regeneration
-setInterval(() => {
-  if (charges < 20) {
-    charges++;
-    chargesEl.textContent = charges;
-  }
-}, 2000);
+        usernameInput.addEventListener('input', (e) => {
+            currentUsername = e.target.value.trim();
+            localStorage.setItem('rplace_username', currentUsername);
+        });
 
-// Platzieren
-async function placePixel(clientX, clientY) {
-  if (charges <= 0) {
-    status.textContent = "Keine Pixel mehr – warte 2s";
-    status.style.color = "#dc3545";
-    return;
-  }
+        COLORS.forEach((color, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'color-btn';
+            btn.style.backgroundColor = color;
+            btn.title = color;
+            
+            if (index === 0) {
+                btn.classList.add('selected');
+            }
 
-  const rect = canvas.getBoundingClientRect();
-  const wx = (clientX - rect.left - offsetX) / scale / PIXEL_SIZE;
-  const wy = (clientY - rect.top - offsetY) / scale / PIXEL_SIZE;
-  const x = Math.round(wx);
-  const y = Math.round(wy);
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedColor = color;
+            });
 
-  const key = `${x}_${y}`;
-  const pixelRef = doc(db, "pixels", key);
+            colorPalette.appendChild(btn);
+        });
 
-  try {
-    await runTransaction(db, async (t) => {
-      const pixelSnap = await t.get(pixelRef);
-      if (pixelSnap.exists() && pixelSnap.data().owner !== uid) {
-        throw new Error("fremd");
-      }
-      t.set(pixelRef, {
-        x, y, color: currentColor, owner: uid || "local", time: serverTimestamp()
-      }, {merge: true});
-    });
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 0.5;
 
-    charges--;
-    placed++;
-    chargesEl.textContent = charges;
-    placedEl.textContent = placed;
-    status.textContent = "Platziert ✓";
-    status.style.color = "#28a745";
-    isDirty = true;
-  } catch (e) {
-    if (e.message.includes("fremd")) {
-      status.textContent = "Fremdes Pixel";
-    } else if (e.code === 'permission-denied') {
-      status.textContent = "Keine Schreibrechte (Rules prüfen!)";
-    } else {
-      status.textContent = "Fehler – siehe Console";
-      console.error(e);
-    }
-    status.style.color = "#dc3545";
-  }
-}
+            for (let i = 0; i <= CANVAS_SIZE; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * PIXEL_SIZE, 0);
+                ctx.lineTo(i * PIXEL_SIZE, CANVAS_SIZE * PIXEL_SIZE);
+                ctx.stroke();
 
-// Input Events (kopiere deinen handleDown / handleMove / wheel / pinch Code hier rein)
+                ctx.beginPath();
+                ctx.moveTo(0, i * PIXEL_SIZE);
+                ctx.lineTo(CANVAS_SIZE * PIXEL_SIZE, i * PIXEL_SIZE);
+                ctx.stroke();
+            }
+        }
 
-requestAnimationFrame(draw);
-</script>
+        function drawCanvas() {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let key in pixelData) {
+                const [x, y] = key.split(',').map(Number);
+                const pixel = pixelData[key];
+                
+                ctx.fillStyle = pixel.color;
+                ctx.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+            }
+
+            drawGrid();
+        }
+
+        function getPixelCoords(event) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const x = Math.floor((event.clientX - rect.left) * scaleX / PIXEL_SIZE);
+            const y = Math.floor((event.clientY - rect.top) * scaleY / PIXEL_SIZE);
+            
+            return { x, y };
+        }
+
+        canvas.addEventListener('click', async (event) => {
+            if (!canvasReady) return;
+
+            const { x, y } = getPixelCoords(event);
+            
+            if (x < 0 || x >= CANVAS_SIZE || y < 0 || y >= CANVAS_SIZE) return;
+
+            const key = `${x},${y}`;
+            const existingPixel = pixelData[key];
+
+            if (!currentUsername) {
+                alert('Bitte gib zuerst einen Benutzernamen ein!');
+                usernameInput.focus();
+                return;
+            }
+
+            if (existingPixel && existingPixel.user !== currentUsername) {
+                alert('Du kannst nur deine eigenen Pixel übermalen!');
+                return;
+            }
+
+            const pixelRef = ref(database, `pixels/${key}`);
+            await set(pixelRef, {
+                color: selectedColor,
+                user: currentUsername,
+                timestamp: Date.now()
+            });
+        });
+
+        canvas.addEventListener('mousemove', (event) => {
+            if (!canvasReady) return;
+
+            const { x, y } = getPixelCoords(event);
+            
+            if (x < 0 || x >= CANVAS_SIZE || y < 0 || y >= CANVAS_SIZE) {
+                pixelInfo.innerHTML = 'Klicke auf ein Pixel für Details';
+                return;
+            }
+
+            const key = `${x},${y}`;
+            const pixel = pixelData[key];
+
+            if (pixel) {
+                const date = new Date(pixel.timestamp);
+                const timeStr = date.toLocaleString('de-DE');
+                
+                pixelInfo.innerHTML = `
+                    <div><span class="info-label">Position:</span> <span class="info-value">${x}, ${y}</span></div>
+                    <div><span class="info-label">Farbe:</span> <span class="info-value">${pixel.color}</span></div>
+                    <div><span class="info-label">Von:</span> <span class="info-value">${pixel.user}</span></div>
+                    <div><span class="info-label">Wann:</span> <span class="info-value">${timeStr}</span></div>
+                `;
+            } else {
+                pixelInfo.innerHTML = `
+                    <div><span class="info-label">Position:</span> <span class="info-value">${x}, ${y}</span></div>
+                    <div><span class="info-value">Leer - klicke zum Platzieren!</span></div>
+                `;
+            }
+        });
+
+        const pixelsRef = ref(database, 'pixels');
+        
+        get(pixelsRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                pixelData = snapshot.val();
+            }
+            drawCanvas();
+            canvasReady = true;
+            
+            loading.classList.add('hidden');
+            mainContainer.classList.remove('hidden');
+        });
+
+        onValue(pixelsRef, (snapshot) => {
+            if (snapshot.exists()) {
+                pixelData = snapshot.val();
+            } else {
+                pixelData = {};
+            }
+            if (canvasReady) {
+                drawCanvas();
+            }
+        });
+    </script>
 </body>
 </html>
