@@ -3,41 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>R/Place - Pixel Canvas</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <title>Pixel Conquest</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght:400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         :root {
-            --bg-dark: #0a0e27;
-            --bg-medium: #1a1f3a;
-            --accent-cyan: #00d9ff;
-            --accent-pink: #ff006e;
-            --accent-yellow: #ffbe0b;
-            --text-bright: #ffffff;
-            --text-dim: #8892b0;
-            --grid-color: rgba(255, 255, 255, 0.05);
-            --shadow-glow: 0 0 20px rgba(0, 217, 255, 0.3);
+            --bg-dark: #0a0e17;
+            --bg-medium: #141824;
+            --bg-light: #1e2433;
+            --accent-primary: #00ff88;
+            --accent-secondary: #00ccff;
+            --accent-danger: #ff3366;
+            --text-primary: #e0e6f0;
+            --text-secondary: #8a95b0;
+            --border-glow: rgba(0, 255, 136, 0.3);
         }
-
+        
         body {
-            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1535 100%);
-            font-family: 'VT323', monospace;
-            color: var(--text-bright);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            overflow-x: hidden;
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
         }
-
+        
         body::before {
             content: '';
             position: fixed;
@@ -46,528 +42,565 @@
             width: 100%;
             height: 100%;
             background: 
-                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 217, 255, 0.03) 2px, rgba(0, 217, 255, 0.03) 4px),
-                radial-gradient(circle at 50% 50%, transparent 0%, rgba(10, 14, 39, 0.8) 100%);
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(0, 204, 255, 0.05) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
         }
-
-        .container {
+        
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
             position: relative;
             z-index: 1;
-            max-width: 1400px;
-            width: 100%;
         }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            animation: slideDown 0.8s ease-out;
+        
+        #header {
+            background: linear-gradient(135deg, var(--bg-medium) 0%, var(--bg-light) 100%);
+            padding: 20px 30px;
+            border-bottom: 2px solid var(--accent-primary);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
         }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        h1 {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-pink), var(--accent-yellow));
+        
+        #title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 10px;
-            filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.5));
             letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
         }
-
-        .subtitle {
-            font-size: 1.5rem;
-            color: var(--text-dim);
-            letter-spacing: 1px;
-        }
-
-        .main-content {
+        
+        #stats {
             display: flex;
             gap: 30px;
-            align-items: flex-start;
-            justify-content: center;
             flex-wrap: wrap;
-            animation: fadeIn 1s ease-out 0.3s both;
         }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
+        
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
         }
-
-        .canvas-container {
-            background: var(--bg-medium);
-            border: 3px solid var(--accent-cyan);
-            box-shadow: 
-                var(--shadow-glow),
-                inset 0 0 50px rgba(0, 0, 0, 0.5);
-            padding: 20px;
-            border-radius: 8px;
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+        
+        #canvas-container {
+            flex: 1;
             position: relative;
-            animation: scaleIn 0.6s ease-out 0.5s both;
+            overflow: hidden;
+            background: var(--bg-dark);
+            cursor: grab;
         }
-
-        @keyframes scaleIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
+        
+        #canvas-container:active {
+            cursor: grabbing;
         }
-
-        .canvas-wrapper {
-            position: relative;
-            background: #000;
-            box-shadow: inset 0 0 30px rgba(0, 217, 255, 0.2);
-        }
-
-        #pixelCanvas {
-            display: block;
-            cursor: crosshair;
+        
+        #world-canvas {
+            position: absolute;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
-
-        .controls {
+        
+        #controls {
             background: var(--bg-medium);
-            border: 3px solid var(--accent-pink);
-            box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
-            padding: 25px;
+            padding: 20px 30px;
+            border-top: 2px solid var(--accent-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        #pixel-types {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .pixel-btn {
+            background: var(--bg-light);
+            border: 2px solid var(--text-secondary);
+            padding: 15px 25px;
             border-radius: 8px;
-            min-width: 280px;
-            animation: slideLeft 0.8s ease-out 0.6s both;
-        }
-
-        @keyframes slideLeft {
-            from {
-                opacity: 0;
-                transform: translateX(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .section-title {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 1rem;
-            color: var(--accent-yellow);
-            margin-bottom: 20px;
-            text-shadow: 0 0 10px rgba(255, 190, 11, 0.5);
-            letter-spacing: 1px;
-        }
-
-        .color-palette {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            margin-bottom: 25px;
-        }
-
-        .color-btn {
-            width: 100%;
-            aspect-ratio: 1;
-            border: 2px solid transparent;
-            border-radius: 4px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
             position: relative;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
         }
-
-        .color-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 16px rgba(255, 255, 255, 0.3);
-        }
-
-        .color-btn.selected {
-            border-color: var(--text-bright);
-            box-shadow: 
-                0 0 20px rgba(255, 255, 255, 0.6),
-                inset 0 0 10px rgba(255, 255, 255, 0.2);
-            transform: scale(1.15);
-        }
-
-        .color-btn::after {
+        
+        .pixel-btn::before {
             content: '';
             position: absolute;
-            inset: -4px;
-            border: 2px solid transparent;
-            border-radius: 6px;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-
-        .color-btn.selected::after {
-            border-color: var(--accent-cyan);
-            opacity: 1;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-            50% {
-                transform: scale(1.1);
-                opacity: 0.5;
-            }
-        }
-
-        .info-panel {
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid var(--accent-cyan);
-            border-radius: 6px;
-            padding: 15px;
-            font-size: 1.2rem;
-            line-height: 1.6;
-            box-shadow: inset 0 0 20px rgba(0, 217, 255, 0.1);
-        }
-
-        .info-label {
-            color: var(--accent-yellow);
-            text-shadow: 0 0 5px rgba(255, 190, 11, 0.5);
-        }
-
-        .info-value {
-            color: var(--text-bright);
-            font-weight: bold;
-        }
-
-        .pixel-info {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 2px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .loading {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-family: 'Press Start 2P', cursive;
-            font-size: 1.5rem;
-            color: var(--accent-cyan);
-            text-shadow: 0 0 20px rgba(0, 217, 255, 0.8);
-            z-index: 1000;
-            animation: blink 1s ease-in-out infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.3;
-            }
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 1.5rem;
-            }
-
-            .subtitle {
-                font-size: 1.2rem;
-            }
-
-            .main-content {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .controls {
-                width: 100%;
-                max-width: 400px;
-            }
-
-            #pixelCanvas {
-                max-width: 100%;
-                height: auto;
-            }
-        }
-
-        .username-input {
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid var(--accent-cyan);
-            border-radius: 6px;
-            padding: 12px;
-            font-family: 'VT323', monospace;
-            font-size: 1.3rem;
-            color: var(--text-bright);
+            top: 0;
+            left: -100%;
             width: 100%;
-            margin-bottom: 20px;
-            outline: none;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+        
+        .pixel-btn:hover::before {
+            left: 100%;
+        }
+        
+        .pixel-btn:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 20px var(--border-glow);
+            transform: translateY(-2px);
+        }
+        
+        .pixel-btn.active {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-color: var(--accent-primary);
+            color: var(--bg-dark);
+            box-shadow: 0 0 30px var(--border-glow);
+            transform: scale(1.05);
+        }
+        
+        .pixel-btn .cost {
+            display: block;
+            font-size: 0.75rem;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+        
+        #zoom-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .zoom-btn {
+            background: var(--bg-light);
+            border: 2px solid var(--accent-primary);
+            color: var(--accent-primary);
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            font-weight: 700;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-
-        .username-input:focus {
-            border-color: var(--accent-pink);
-            box-shadow: 0 0 15px rgba(255, 0, 110, 0.5);
+        
+        .zoom-btn:hover {
+            background: var(--accent-primary);
+            color: var(--bg-dark);
+            box-shadow: 0 0 20px var(--border-glow);
+            transform: scale(1.1);
         }
-
-        .username-input::placeholder {
-            color: var(--text-dim);
+        
+        #zoom-level {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(20, 24, 36, 0.95);
+            border: 1px solid var(--accent-primary);
+            padding: 10px 15px;
+            border-radius: 6px;
+            pointer-events: none;
+            z-index: 1000;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .producing {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        #notification {
+            position: fixed;
+            top: 100px;
+            right: 30px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--bg-dark);
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 255, 136, 0.4);
+            opacity: 0;
+            transform: translateX(400px);
+            transition: all 0.4s ease;
+            z-index: 2000;
+        }
+        
+        #notification.show {
+            opacity: 1;
+            transform: translateX(0);
         }
     </style>
 </head>
 <body>
-    <div class="loading" id="loading">LADE...</div>
-
-    <div class="container hidden" id="mainContainer">
-        <header>
-            <h1>R/PLACE</h1>
-            <p class="subtitle">Pixel für Pixel gemeinsam erstellt</p>
-        </header>
-
-        <div class="main-content">
-            <div class="canvas-container">
-                <div class="canvas-wrapper">
-                    <canvas id="pixelCanvas" width="1000" height="1000"></canvas>
+    <div id="game-container">
+        <div id="header">
+            <div id="title">PIXEL CONQUEST</div>
+            <div id="stats">
+                <div class="stat">
+                    <span class="stat-label">Pixel Vorrat</span>
+                    <span class="stat-value" id="pixel-count">1000</span>
                 </div>
-            </div>
-
-            <div class="controls">
-                <div class="section-title">FARBEN</div>
-                <div class="color-palette" id="colorPalette"></div>
-
-                <div class="section-title">DEIN NAME</div>
-                <input 
-                    type="text" 
-                    id="usernameInput" 
-                    class="username-input" 
-                    placeholder="Benutzername..." 
-                    maxlength="20"
-                >
-
-                <div class="info-panel">
-                    <div class="info-label">PIXEL-INFO</div>
-                    <div class="pixel-info" id="pixelInfo">
-                        Klicke auf ein Pixel für Details
-                    </div>
+                <div class="stat">
+                    <span class="stat-label">Territorium</span>
+                    <span class="stat-value" id="territory-count">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Produktion/s</span>
+                    <span class="stat-value" id="production-rate">0</span>
                 </div>
             </div>
         </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, onValue, set, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCXNvSbBsRVgyKJUmckxpm_WHhC6xflSTg",
-            authDomain: "r-world-3879d.firebaseapp.com",
-            projectId: "r-world-3879d",
-            storageBucket: "r-world-3879d.appspot.com",
-            messagingSenderId: "878075356607",
-            appId: "1:878075356607:web:c2177f3904858d50626d0a"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-
-        const COLORS = [
-            '#FF0000', '#FF8800', '#FFFF00', '#88FF00',
-            '#00FF00', '#00FF88', '#00FFFF', '#0088FF',
-            '#0000FF', '#8800FF', '#FF00FF', '#FF0088',
-            '#FFFFFF', '#CCCCCC', '#888888', '#444444',
-            '#000000', '#8B4513', '#FFB6C1', '#FFA500'
-        ];
-
-        const CANVAS_SIZE = 100;
-        const PIXEL_SIZE = 10;
-
-        const canvas = document.getElementById('pixelCanvas');
-        const ctx = canvas.getContext('2d');
-        const colorPalette = document.getElementById('colorPalette');
-        const pixelInfo = document.getElementById('pixelInfo');
-        const usernameInput = document.getElementById('usernameInput');
-        const loading = document.getElementById('loading');
-        const mainContainer = document.getElementById('mainContainer');
-
-        let selectedColor = COLORS[0];
-        let currentUsername = localStorage.getItem('rplace_username') || '';
-        let pixelData = {};
-        let canvasReady = false;
-
-        usernameInput.value = currentUsername;
-
-        usernameInput.addEventListener('input', (e) => {
-            currentUsername = e.target.value.trim();
-            localStorage.setItem('rplace_username', currentUsername);
-        });
-
-        COLORS.forEach((color, index) => {
-            const btn = document.createElement('button');
-            btn.className = 'color-btn';
-            btn.style.backgroundColor = color;
-            btn.title = color;
-            
-            if (index === 0) {
-                btn.classList.add('selected');
-            }
-
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                selectedColor = color;
-            });
-
-            colorPalette.appendChild(btn);
-        });
-
-        function drawGrid() {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-            ctx.lineWidth = 0.5;
-
-            for (let i = 0; i <= CANVAS_SIZE; i++) {
-                ctx.beginPath();
-                ctx.moveTo(i * PIXEL_SIZE, 0);
-                ctx.lineTo(i * PIXEL_SIZE, CANVAS_SIZE * PIXEL_SIZE);
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.moveTo(0, i * PIXEL_SIZE);
-                ctx.lineTo(CANVAS_SIZE * PIXEL_SIZE, i * PIXEL_SIZE);
-                ctx.stroke();
-            }
-        }
-
-        function drawCanvas() {
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            for (let key in pixelData) {
-                const [x, y] = key.split(',').map(Number);
-                const pixel = pixelData[key];
-                
-                ctx.fillStyle = pixel.color;
-                ctx.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
-            }
-
-            drawGrid();
-        }
-
-        function getPixelCoords(event) {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            
-            const x = Math.floor((event.clientX - rect.left) * scaleX / PIXEL_SIZE);
-            const y = Math.floor((event.clientY - rect.top) * scaleY / PIXEL_SIZE);
-            
-            return { x, y };
-        }
-
-        canvas.addEventListener('click', async (event) => {
-            if (!canvasReady) return;
-
-            const { x, y } = getPixelCoords(event);
-            
-            if (x < 0 || x >= CANVAS_SIZE || y < 0 || y >= CANVAS_SIZE) return;
-
-            const key = `${x},${y}`;
-            const existingPixel = pixelData[key];
-
-            if (!currentUsername) {
-                alert('Bitte gib zuerst einen Benutzernamen ein!');
-                usernameInput.focus();
-                return;
-            }
-
-            if (existingPixel && existingPixel.user !== currentUsername) {
-                alert('Du kannst nur deine eigenen Pixel übermalen!');
-                return;
-            }
-
-            const pixelRef = ref(database, `pixels/${key}`);
-            await set(pixelRef, {
-                color: selectedColor,
-                user: currentUsername,
-                timestamp: Date.now()
-            });
-        });
-
-        canvas.addEventListener('mousemove', (event) => {
-            if (!canvasReady) return;
-
-            const { x, y } = getPixelCoords(event);
-            
-            if (x < 0 || x >= CANVAS_SIZE || y < 0 || y >= CANVAS_SIZE) {
-                pixelInfo.innerHTML = 'Klicke auf ein Pixel für Details';
-                return;
-            }
-
-            const key = `${x},${y}`;
-            const pixel = pixelData[key];
-
-            if (pixel) {
-                const date = new Date(pixel.timestamp);
-                const timeStr = date.toLocaleString('de-DE');
-                
-                pixelInfo.innerHTML = `
-                    <div><span class="info-label">Position:</span> <span class="info-value">${x}, ${y}</span></div>
-                    <div><span class="info-label">Farbe:</span> <span class="info-value">${pixel.color}</span></div>
-                    <div><span class="info-label">Von:</span> <span class="info-value">${pixel.user}</span></div>
-                    <div><span class="info-label">Wann:</span> <span class="info-value">${timeStr}</span></div>
-                `;
-            } else {
-                pixelInfo.innerHTML = `
-                    <div><span class="info-label">Position:</span> <span class="info-value">${x}, ${y}</span></div>
-                    <div><span class="info-value">Leer - klicke zum Platzieren!</span></div>
-                `;
-            }
-        });
-
-        const pixelsRef = ref(database, 'pixels');
         
-        get(pixelsRef).then((snapshot) => {
-            if (snapshot.exists()) {
-                pixelData = snapshot.val();
-            }
-            drawCanvas();
-            canvasReady = true;
+        <div id="canvas-container">
+            <canvas id="world-canvas"></canvas>
+        </div>
+        
+        <div id="controls">
+            <div id="pixel-types">
+                <button class="pixel-btn active" data-type="normal">
+                    Standard
+                    <span class="cost">1 Pixel</span>
+                </button>
+                <button class="pixel-btn" data-type="miner">
+                    Miner
+                    <span class="cost">50 Pixel | +1/s</span>
+                </button>
+                <button class="pixel-btn" data-type="barracks">
+                    Kaserne
+                    <span class="cost">100 Pixel | Expansion</span>
+                </button>
+            </div>
             
-            loading.classList.add('hidden');
-            mainContainer.classList.remove('hidden');
+            <div id="zoom-controls">
+                <button class="zoom-btn" id="zoom-out">−</button>
+                <div id="zoom-level">100%</div>
+                <button class="zoom-btn" id="zoom-in">+</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="notification"></div>
+    
+    <script>
+        // Spiel-Konfiguration
+        const WORLD_SIZE = 200; // 200x200 Weltkarte
+        const PIXEL_SIZE = 10;
+        const INITIAL_PIXELS = 1000;
+        
+        const PIXEL_COSTS = {
+            normal: 1,
+            miner: 50,
+            barracks: 100
+        };
+        
+        const PIXEL_COLORS = {
+            normal: '#00ff88',
+            miner: '#ffaa00',
+            barracks: '#ff3366'
+        };
+        
+        // Spiel-Zustand
+        let gameState = {
+            pixels: INITIAL_PIXELS,
+            territory: 0,
+            productionRate: 0,
+            selectedType: 'normal',
+            zoom: 1,
+            offsetX: 0,
+            offsetY: 0,
+            isDragging: false,
+            dragStartX: 0,
+            dragStartY: 0
+        };
+        
+        // Weltkarte (2D-Array)
+        let worldMap = Array(WORLD_SIZE).fill(null).map(() => Array(WORLD_SIZE).fill(null));
+        
+        // Canvas Setup
+        const canvas = document.getElementById('world-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+        
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            gameState.offsetX = canvas.width / 2 - (WORLD_SIZE * PIXEL_SIZE * gameState.zoom) / 2;
+            gameState.offsetY = canvas.height / 2 - (WORLD_SIZE * PIXEL_SIZE * gameState.zoom) / 2;
+            render();
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // UI-Elemente
+        const pixelCountEl = document.getElementById('pixel-count');
+        const territoryCountEl = document.getElementById('territory-count');
+        const productionRateEl = document.getElementById('production-rate');
+        const zoomLevelEl = document.getElementById('zoom-level');
+        const notificationEl = document.getElementById('notification');
+        
+        // Event-Listener für Pixel-Typen
+        document.querySelectorAll('.pixel-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.pixel-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                gameState.selectedType = btn.dataset.type;
+            });
         });
-
-        onValue(pixelsRef, (snapshot) => {
-            if (snapshot.exists()) {
-                pixelData = snapshot.val();
-            } else {
-                pixelData = {};
-            }
-            if (canvasReady) {
-                drawCanvas();
+        
+        // Zoom-Kontrollen
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            gameState.zoom = Math.min(gameState.zoom * 1.5, 8);
+            updateZoomLevel();
+            render();
+        });
+        
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            gameState.zoom = Math.max(gameState.zoom / 1.5, 0.25);
+            updateZoomLevel();
+            render();
+        });
+        
+        function updateZoomLevel() {
+            zoomLevelEl.textContent = Math.round(gameState.zoom * 100) + '%';
+        }
+        
+        // Maus-Events für Dragging
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 2 || e.button === 1) { // Rechtsklick oder Mittelklick
+                gameState.isDragging = true;
+                gameState.dragStartX = e.clientX - gameState.offsetX;
+                gameState.dragStartY = e.clientY - gameState.offsetY;
+                e.preventDefault();
             }
         });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (gameState.isDragging) {
+                gameState.offsetX = e.clientX - gameState.dragStartX;
+                gameState.offsetY = e.clientY - gameState.dragStartY;
+                render();
+            }
+        });
+        
+        canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 2 || e.button === 1) {
+                gameState.isDragging = false;
+            }
+        });
+        
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+        
+        // Click-Event für Pixel platzieren
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            
+            const worldX = Math.floor((clickX - gameState.offsetX) / (PIXEL_SIZE * gameState.zoom));
+            const worldY = Math.floor((clickY - gameState.offsetY) / (PIXEL_SIZE * gameState.zoom));
+            
+            if (worldX >= 0 && worldX < WORLD_SIZE && worldY >= 0 && worldY < WORLD_SIZE) {
+                placePixel(worldX, worldY);
+            }
+        });
+        
+        // Wheel-Event für Zoom
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            gameState.zoom = Math.max(0.25, Math.min(8, gameState.zoom * delta));
+            updateZoomLevel();
+            render();
+        });
+        
+        // Pixel platzieren
+        function placePixel(x, y) {
+            const cost = PIXEL_COSTS[gameState.selectedType];
+            
+            if (gameState.pixels < cost) {
+                showNotification(`Nicht genug Pixel! Benötigt: ${cost}`);
+                return;
+            }
+            
+            if (worldMap[y][x] !== null) {
+                showNotification('Feld bereits belegt!');
+                return;
+            }
+            
+            gameState.pixels -= cost;
+            worldMap[y][x] = {
+                type: gameState.selectedType,
+                owner: 'player',
+                createdAt: Date.now()
+            };
+            
+            gameState.territory++;
+            
+            if (gameState.selectedType === 'miner') {
+                gameState.productionRate++;
+            }
+            
+            updateUI();
+            render();
+            
+            showNotification(`${gameState.selectedType.toUpperCase()} platziert!`);
+        }
+        
+        // Render-Funktion
+        function render() {
+            ctx.fillStyle = '#0a0e17';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Grid zeichnen
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            
+            const scaledPixelSize = PIXEL_SIZE * gameState.zoom;
+            
+            for (let y = 0; y < WORLD_SIZE; y++) {
+                for (let x = 0; x < WORLD_SIZE; x++) {
+                    const screenX = gameState.offsetX + x * scaledPixelSize;
+                    const screenY = gameState.offsetY + y * scaledPixelSize;
+                    
+                    // Grid nur zeichnen wenn Zoom > 0.5
+                    if (gameState.zoom > 0.5) {
+                        ctx.strokeRect(screenX, screenY, scaledPixelSize, scaledPixelSize);
+                    }
+                    
+                    // Pixel zeichnen
+                    if (worldMap[y][x] !== null) {
+                        const pixel = worldMap[y][x];
+                        ctx.fillStyle = PIXEL_COLORS[pixel.type];
+                        ctx.fillRect(screenX + 1, screenY + 1, scaledPixelSize - 2, scaledPixelSize - 2);
+                        
+                        // Glow-Effekt für Miner
+                        if (pixel.type === 'miner' && gameState.zoom > 1) {
+                            ctx.shadowBlur = 10;
+                            ctx.shadowColor = PIXEL_COLORS[pixel.type];
+                            ctx.fillRect(screenX + 1, screenY + 1, scaledPixelSize - 2, scaledPixelSize - 2);
+                            ctx.shadowBlur = 0;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // UI aktualisieren
+        function updateUI() {
+            pixelCountEl.textContent = gameState.pixels;
+            territoryCountEl.textContent = gameState.territory;
+            productionRateEl.textContent = gameState.productionRate.toFixed(1);
+        }
+        
+        // Notification anzeigen
+        function showNotification(message) {
+            notificationEl.textContent = message;
+            notificationEl.classList.add('show');
+            setTimeout(() => {
+                notificationEl.classList.remove('show');
+            }, 2000);
+        }
+        
+        // Kasernen-Expansion
+        function expandBarracks() {
+            for (let y = 0; y < WORLD_SIZE; y++) {
+                for (let x = 0; x < WORLD_SIZE; x++) {
+                    if (worldMap[y][x]?.type === 'barracks') {
+                        // Versuche benachbarte Felder zu erobern
+                        const neighbors = [
+                            [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]
+                        ];
+                        
+                        for (let [nx, ny] of neighbors) {
+                            if (nx >= 0 && nx < WORLD_SIZE && ny >= 0 && ny < WORLD_SIZE) {
+                                if (worldMap[ny][nx] === null && Math.random() < 0.1) { // 10% Chance pro Tick
+                                    worldMap[ny][nx] = {
+                                        type: 'normal',
+                                        owner: 'player',
+                                        createdAt: Date.now()
+                                    };
+                                    gameState.territory++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Produktions-Loop
+        let lastProductionTime = Date.now();
+        setInterval(() => {
+            const now = Date.now();
+            const deltaTime = (now - lastProductionTime) / 1000;
+            
+            gameState.pixels += gameState.productionRate * deltaTime;
+            lastProductionTime = now;
+            
+            updateUI();
+        }, 1000);
+        
+        // Kasernen-Expansion-Loop
+        setInterval(() => {
+            expandBarracks();
+            render();
+            updateUI();
+        }, 2000);
+        
+        // Initiales Rendering
+        render();
+        updateUI();
+        
+        showNotification('Willkommen bei PIXEL CONQUEST! Platziere deine ersten Pixel!');
     </script>
 </body>
 </html>
