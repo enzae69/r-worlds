@@ -3,41 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <title>Pixel World – Live ohne Login</title>
+  <title>Pixel World – Light Mode</title>
   <style>
-    body { margin:0; overflow:hidden; background:#000; font-family:system-ui, sans-serif; color:#eee; }
-    #canvas { width:100vw; height:100vh; display:block; touch-action:none; image-rendering:pixelated; }
+    body {
+      margin:0; overflow:hidden; background:#f8f9fc;
+      font-family:system-ui, -apple-system, sans-serif; color:#333;
+    }
+    #canvas {
+      width:100vw; height:100vh; display:block;
+      touch-action:none; image-rendering:pixelated;
+      background:#e8ecff;
+    }
     #gui {
-      position:fixed; top:12px; left:12px; z-index:100;
-      background:rgba(30,30,40,0.92); color:#eee;
-      padding:14px 18px; border-radius:12px;
-      box-shadow:0 4px 24px rgba(0,0,0,0.5);
-      border:1px solid #444; min-width:240px; backdrop-filter:blur(8px);
+      position:fixed; top:16px; left:16px; z-index:100;
+      background:rgba(255,255,255,0.96); color:#222;
+      padding:16px 20px; border-radius:16px;
+      box-shadow:0 6px 24px rgba(0,0,0,0.12);
+      border:1px solid #d0d8e8; min-width:260px;
+      backdrop-filter:blur(10px);
     }
     #colors {
-      display:grid; grid-template-columns:repeat(5, 38px); gap:8px;
-      margin:12px 0 10px;
+      display:grid; grid-template-columns:repeat(5, 40px); gap:10px;
+      margin:14px 0 12px;
     }
     #colors button {
-      width:38px; height:38px; border:2px solid #555;
-      border-radius:8px; cursor:pointer; transition:all 0.12s;
+      width:40px; height:40px; border:2px solid #e0e0e0;
+      border-radius:10px; cursor:pointer; transition:all 0.14s;
+      box-shadow:0 2px 6px rgba(0,0,0,0.08);
     }
-    #colors button:hover { transform:scale(1.15); border-color:#aaa; }
-    #colors button.selected { border-color:#4fc3f7; box-shadow:0 0 0 3px rgba(79,195,247,0.4); }
-    #status, #timer { font-size:0.95rem; margin:8px 0; color:#ccc; }
-    #timer { font-weight:bold; color:#ff9800; }
-    .info { font-size:0.9rem; line-height:1.4; margin-top:12px; border-top:1px solid #444; padding-top:10px; }
+    #colors button:hover { transform:scale(1.14); border-color:#aaa; }
+    #colors button.selected {
+      border-color:#0066ff; box-shadow:0 0 0 3px rgba(0,102,255,0.25);
+    }
+    #status, #timer {
+      font-size:0.96rem; margin:10px 0; color:#555;
+    }
+    #timer { font-weight:600; color:#e65100; }
+    .info {
+      font-size:0.92rem; line-height:1.5; margin-top:14px;
+      border-top:1px solid #e0e0e0; padding-top:12px;
+    }
   </style>
 </head>
 <body>
 <div id="gui">
-  <strong>Farbe wählen</strong>
+  <strong>Farbe</strong>
   <div id="colors"></div>
-  <div id="status">Bereit • 1 Pixel verfügbar</div>
+  <div id="status">Bereit • Pixel verfügbar</div>
   <div id="timer">Nächster Pixel in –</div>
   <div class="info">
-    <div>Pixel platziert: <span id="placed">0</span></div>
-    <div>Verfügbare Pixel: <span id="charges">1</span></div>
+    <div>Verfügbare Pixel: <span id="charges">20</span>/20</div>
+    <div>Platziert insgesamt: <span id="placed">0</span></div>
   </div>
 </div>
 
@@ -45,7 +61,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot, serverTimestamp, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -61,16 +77,16 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Canvas Setup
+// Canvas & Vars
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const status = document.getElementById('status');
 const timerEl = document.getElementById('timer');
-const placedEl = document.getElementById('placed');
 const chargesEl = document.getElementById('charges');
+const placedEl = document.getElementById('placed');
 
-const PIXEL_SIZE = 16; // kleiner als vorher → mehr Platz auf Screen
-let currentColor = "#ffffff";
+const PIXEL_SIZE = 16;
+let currentColor = "#000000";
 let pixels = new Map(); // "x_y" → {color, owner}
 let scale = 1;
 let offsetX = 0;
@@ -78,13 +94,12 @@ let offsetY = 0;
 let isDirty = true;
 let user = null;
 let userRef = null;
-let userData = { charges: 1, lastCharge: serverTimestamp(), placed: 0 };
+let userData = { charges: 20, lastRegen: null, placed: 0 };
 
-// Farbpalette (ähnlich wplace / r/place)
+// Farbpalette
 const palette = [
-  "#000000","#ffffff","#e91e63","#9c27b0","#673ab7","#3f51b5","#2196f3","#03a9f4",
-  "#00bcd4","#009688","#4caf50","#8bc34a","#cddc39","#ffeb3b","#ffc107","#ff9800",
-  "#ff5722","#795548","#607d8b","#9e9e9e"
+  "#000000","#ffffff","#ff0000","#00ff00","#0000ff","#ffff00","#ff00ff","#00ffff",
+  "#ff8800","#88ff00","#0088ff","#ff0088","#8800ff","#00ff88","#aaaaaa","#444444"
 ];
 const colorDiv = document.getElementById('colors');
 palette.forEach(c => {
@@ -108,40 +123,40 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-// Draw Loop
+// Draw
 function draw() {
   if (!isDirty) return requestAnimationFrame(draw);
   isDirty = false;
 
   ctx.setTransform(1,0,0,1,0,0);
-  ctx.fillStyle = "#111";
+  ctx.fillStyle = "#f0f4ff";
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
   ctx.save();
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
 
-  // Grid (leicht sichtbar bei Zoom >0.8)
-  if (scale > 0.8) {
-    ctx.strokeStyle = "#222";
+  // leichter Grid
+  if (scale > 0.7) {
+    ctx.strokeStyle = "#d8e0ff";
     ctx.lineWidth = 1 / scale;
     const left = -offsetX / scale;
     const top = -offsetY / scale;
     const right = left + canvas.width / scale;
     const bottom = top + canvas.height / scale;
-    for (let x = Math.floor(left / PIXEL_SIZE) * PIXEL_SIZE; x < right; x += PIXEL_SIZE) {
+    for (let x = Math.floor(left / PIXEL_SIZE) * PIXEL_SIZE; x < right + PIXEL_SIZE; x += PIXEL_SIZE) {
       ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
     }
-    for (let y = Math.floor(top / PIXEL_SIZE) * PIXEL_SIZE; y < bottom; y += PIXEL_SIZE) {
+    for (let y = Math.floor(top / PIXEL_SIZE) * PIXEL_SIZE; y < bottom + PIXEL_SIZE; y += PIXEL_SIZE) {
       ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
     }
   }
 
-  // Pixels
-  const viewLeft   = -offsetX / scale / PIXEL_SIZE - 2;
-  const viewRight  = viewLeft + canvas.width / scale / PIXEL_SIZE + 4;
-  const viewTop    = -offsetY / scale / PIXEL_SIZE - 2;
-  const viewBottom = viewTop + canvas.height / scale / PIXEL_SIZE + 4;
+  // Pixels zeichnen
+  const viewLeft   = -offsetX / scale / PIXEL_SIZE - 3;
+  const viewRight  = viewLeft + canvas.width / scale / PIXEL_SIZE + 6;
+  const viewTop    = -offsetY / scale / PIXEL_SIZE - 3;
+  const viewBottom = viewTop + canvas.height / scale / PIXEL_SIZE + 6;
 
   pixels.forEach((data, key) => {
     const [x, y] = key.split('_').map(Number);
@@ -155,21 +170,25 @@ function draw() {
 }
 draw();
 
-// Auth + User Data
+// Auth + Daten laden
 onAuthStateChanged(auth, u => {
   if (u) {
     user = u;
     userRef = doc(db, "users", u.uid);
     getDoc(userRef).then(snap => {
       if (!snap.exists()) {
-        setDoc(userRef, { charges: 1, lastCharge: serverTimestamp(), placed: 0 });
+        setDoc(userRef, {
+          charges: 20,
+          lastRegen: serverTimestamp(),
+          placed: 0
+        });
       }
     });
     onSnapshot(userRef, snap => {
       if (snap.exists()) {
         userData = snap.data();
-        chargesEl.textContent = userData.charges || 1;
-        placedEl.textContent = userData.placed || 0;
+        chargesEl.textContent = userData.charges ?? 20;
+        placedEl.textContent = userData.placed ?? 0;
       }
     });
   }
@@ -187,36 +206,28 @@ onSnapshot(collection(db, "pixels"), snap => {
   isDirty = true;
 });
 
-// Cooldown / Charge Timer
-function updateTimer() {
-  if (!userData.lastCharge) return;
-  const now = Date.now();
-  const last = userData.lastCharge?.toMillis?.() ?? 0;
-  const regenTime = 30000; // 30 Sekunden wie bei wplace
-  const diff = now - last;
-  const remaining = Math.max(0, regenTime - diff);
-
-  if (remaining <= 0 && (userData.charges || 0) < 5) { // max 5 charges stacken
-    runTransaction(db, async t => {
+// Regeneration alle 2 Sekunden
+setInterval(async () => {
+  if (!userRef || !user) return;
+  try {
+    await runTransaction(db, async (t) => {
       const snap = await t.get(userRef);
       const data = snap.data() || {};
-      const ch = (data.charges || 0) + 1;
-      t.update(userRef, {
-        charges: Math.min(5, ch),
-        lastCharge: serverTimestamp()
-      });
+      let charges = data.charges ?? 20;
+      if (charges < 20) {
+        charges = Math.min(20, charges + 1);
+        t.update(userRef, { charges, lastRegen: serverTimestamp() });
+      }
     });
-  }
+  } catch (e) {}
+}, 2000);
 
-  timerEl.textContent = remaining > 0
-    ? `Nächster Pixel in ${Math.ceil(remaining/1000)}s`
-    : "Pixel verfügbar!";
-}
-setInterval(updateTimer, 900);
-
-// Place Pixel
+// Platzieren
 async function placePixel(clientX, clientY) {
-  if (!user || !userRef) return status.textContent = "Warte auf Verbindung...";
+  if (!user || !userRef) {
+    status.textContent = "Verbinde...";
+    return;
+  }
 
   const rect = canvas.getBoundingClientRect();
   const wx = (clientX - rect.left - offsetX) / scale / PIXEL_SIZE;
@@ -228,39 +239,39 @@ async function placePixel(clientX, clientY) {
   const pixelRef = doc(db, "pixels", key);
 
   try {
-    await runTransaction(db, async t => {
+    await runTransaction(db, async (t) => {
       const userSnap = await t.get(userRef);
       const ud = userSnap.data() || {};
-      const charges = ud.charges || 0;
+      let charges = ud.charges ?? 20;
 
       if (charges < 1) throw new Error("Keine Pixel mehr verfügbar");
 
       const pixelSnap = await t.get(pixelRef);
-      const pd = pixelSnap.exists() ? pixelSnap.data() : null;
-
-      if (pd && pd.owner !== user.uid) {
-        throw new Error("Fremdes Pixel – nicht überschreibbar");
+      if (pixelSnap.exists() && pixelSnap.data().owner !== user.uid) {
+        throw new Error("Fremdes Pixel");
       }
 
       t.set(pixelRef, {
-        x, y, color: currentColor, owner: user.uid, time: serverTimestamp()
+        x, y,
+        color: currentColor,
+        owner: user.uid,
+        time: serverTimestamp()
       }, {merge: true});
 
       t.update(userRef, {
         charges: charges - 1,
-        placed: (ud.placed || 0) + 1,
-        lastCharge: serverTimestamp()
+        placed: (ud.placed || 0) + 1
       });
     });
 
-    status.textContent = "Pixel platziert!";
+    status.textContent = "Pixel platziert ✓";
     isDirty = true;
   } catch (e) {
-    status.textContent = e.message.includes("Keine") ? "Warte auf neuen Pixel..." : e.message;
+    status.textContent = e.message.includes("Keine") ? "Warte kurz..." : e.message;
   }
 }
 
-// Input (Mouse + Touch)
+// Input Events
 let isDown = false;
 
 function down(e) {
@@ -281,18 +292,17 @@ function move(e) {
 
 canvas.addEventListener('mousedown', down);
 canvas.addEventListener('mousemove', move);
-canvas.addEventListener('mouseup',   () => isDown = false);
-canvas.addEventListener('mouseleave', () => isDown = false);
+canvas.addEventListener('mouseup mouseleave', () => isDown = false);
 canvas.addEventListener('touchstart', down, {passive:false});
-canvas.addEventListener('touchmove',  move, {passive:false});
-canvas.addEventListener('touchend',   () => isDown = false);
+canvas.addEventListener('touchmove', move, {passive:false});
+canvas.addEventListener('touchend touchcancel', () => isDown = false);
 
-// Zoom (Wheel)
+// Zoom Wheel
 canvas.addEventListener("wheel", e => {
   e.preventDefault();
-  const delta = e.deltaY < 0 ? 1.12 : 0.89;
+  const delta = e.deltaY < 0 ? 1.14 : 0.88;
   const old = scale;
-  scale = Math.max(0.2, Math.min(40, scale * delta));
+  scale = Math.max(0.25, Math.min(50, scale * delta));
 
   const mx = e.clientX - canvas.getBoundingClientRect().left;
   const my = e.clientY - canvas.getBoundingClientRect().top;
@@ -301,14 +311,17 @@ canvas.addEventListener("wheel", e => {
   isDirty = true;
 }, {passive:false});
 
-// Pinch Zoom + Pan
+// Pinch + Pan
 let lastTouches = null;
-canvas.addEventListener("touchstart", e => { e.preventDefault(); lastTouches = [...e.touches]; }, {passive:false});
+canvas.addEventListener("touchstart", e => {
+  e.preventDefault();
+  lastTouches = [...e.touches];
+}, {passive:false});
+
 canvas.addEventListener("touchmove", e => {
   e.preventDefault();
-  const touches = e.touches;
-  if (touches.length === 2 && lastTouches?.length === 2) {
-    const [t1,t2] = touches, [p1,p2] = lastTouches;
+  if (e.touches.length === 2 && lastTouches?.length === 2) {
+    const [t1,t2] = e.touches, [p1,p2] = lastTouches;
     const midX = (t1.clientX + t2.clientX)/2;
     const midY = (t1.clientY + t2.clientY)/2;
     const prevMidX = (p1.clientX + p2.clientX)/2;
@@ -316,20 +329,22 @@ canvas.addEventListener("touchmove", e => {
     const dOld = Math.hypot(p2.clientX-p1.clientX, p2.clientY-p1.clientY);
     const dNew = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
 
-    if (dOld > 10) {
+    if (dOld > 12) {
       const zoom = dNew / dOld;
       const old = scale;
-      scale *= zoom ** 0.85;
-      scale = Math.max(0.2, Math.min(40, scale));
+      scale *= Math.pow(zoom, 0.9);
+      scale = Math.max(0.25, Math.min(50, scale));
       offsetX = midX - (midX - offsetX) * (scale / old);
       offsetY = midY - (midY - offsetY) * (scale / old);
     }
+
     offsetX += midX - prevMidX;
     offsetY += midY - prevMidY;
     isDirty = true;
-    lastTouches = [...touches];
+    lastTouches = [...e.touches];
   }
 }, {passive:false});
+
 canvas.addEventListener("touchend", () => lastTouches = null);
 
 requestAnimationFrame(draw);
