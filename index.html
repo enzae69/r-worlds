@@ -3,30 +3,67 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <title>r-world – Firebase Pixel mit smooth Zoom & Pan</title>
+  <title>r-world – Pixel mit Cooldown & besserer GUI</title>
   <style>
-    body { margin:0; overflow:hidden; background:#111; font-family:sans-serif; }
+    body {
+      margin:0; overflow:hidden; background:#111;
+      font-family: system-ui, sans-serif;
+      color: #eee;
+    }
     #canvas {
       width:100vw; height:100vh; display:block;
-      background:#eee; touch-action: none;
+      background:#222; touch-action: none;
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
     }
-    #colors {
+    #gui {
       position: fixed; top: 12px; left: 12px; z-index: 100;
-      background: rgba(255,255,255,0.92); padding: 8px;
-      border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+      background: rgba(30,30,40,0.94);
+      padding: 12px 14px;
+      border-radius: 12px;
+      box-shadow: 0 3px 20px rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    #colors {
+      display: grid;
+      grid-template-columns: repeat(4, 38px);
+      gap: 8px;
+      margin-top: 10px;
     }
     #colors button {
-      width: 32px; height: 32px; margin: 4px;
-      border: 2px solid #fff; border-radius: 6px;
-      cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      width: 38px; height: 38px;
+      border: 2.5px solid #444;
+      border-radius: 9px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      transition: all 0.13s;
+    }
+    #colors button:hover {
+      transform: scale(1.14);
+      border-color: #aaa;
+    }
+    #colors button.selected {
+      border-color: #fff;
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.4);
+      transform: scale(1.08);
+    }
+    #status {
+      font-size: 0.92rem;
+      margin-top: 8px;
+      min-height: 1.3em;
+      color: #aaa;
     }
   </style>
 </head>
 <body>
 
-<div id="colors"></div>
+<div id="gui">
+  <div><strong>Farbe</strong></div>
+  <div id="colors"></div>
+  <div id="status">Bereit • Cooldown: frei</div>
+</div>
+
 <canvas id="canvas"></canvas>
 
 <script type="module">
@@ -49,37 +86,59 @@ const db = getFirestore(app);
 // ===== Canvas & Vars =====
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+const status = document.getElementById('status');
 
-const PIXEL = 40;
-let currentColor = "#000000";
+const PIXEL = 32;           // etwas kleiner → mehr Übersicht
+const WORLD_MIN = -200;     // Welt wird begrenzt
+const WORLD_MAX =  200;
+let currentColor = "#ffffff";
 const pixels = new Map();
 
-// Viewport / Transformation
-let scale     = 1;
-let offsetX   = 0;
-let offsetY   = 0;
-let isDirty   = true;   // nur neu zeichnen wenn nötig
+// Viewport
+let scale = 1;
+let offsetX = 0;
+let offsetY = 0;
+let isDirty = true;
+
+// Cooldown
+let lastPlaceTime = 0;
+const COOLDOWN_MS = 30_000;   // 30 Sekunden – du kannst hier z. B. 60000 machen (1 min)
 
 // Resize
 function resize() {
-  canvas.width  = window.innerWidth;
+  canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   isDirty = true;
 }
 window.addEventListener('resize', resize);
 resize();
 
-// Farbpalette
-const palette = ["#000","#f00","#0f0","#00f","#ff0","#f0f","#0ff","#fff","#888","#fa0","#0fa","#a0f"];
+// Farbpalette + GUI
+const palette = [
+  "#000000","#ffffff","#ff0000","#00ff00","#0000ff",
+  "#ffff00","#ff00ff","#00ffff","#ff8800","#88ff00",
+  "#8800ff","#ff0088","#888888","#444444","#ffcc99"
+];
+
 const colorDiv = document.getElementById('colors');
+let colorButtons = [];
+
 palette.forEach(c => {
   const b = document.createElement('button');
   b.style.background = c;
-  b.onclick = () => currentColor = c;
+  b.dataset.color = c;
+  b.onclick = () => {
+    currentColor = c;
+    colorButtons.forEach(btn => btn.classList.remove('selected'));
+    b.classList.add('selected');
+  };
   colorDiv.appendChild(b);
+  colorButtons.push(b);
 });
+// Erste Farbe vorselektieren
+colorButtons[0].click();
 
-// ===== Zeichnen (mit requestAnimationFrame) =====
+// ===== Draw loop =====
 function draw() {
   if (!isDirty) {
     requestAnimationFrame(draw);
@@ -87,7 +146,7 @@ function draw() {
   }
   isDirty = false;
 
-  ctx.setTransform(1,0,0,1,0,0);           // Reset
+  ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
   ctx.save();
@@ -95,47 +154,44 @@ function draw() {
   ctx.scale(scale, scale);
 
   // Hintergrund
-  ctx.fillStyle = "#eee";
-  ctx.fillRect(0, 0, canvas.width/scale, canvas.height/scale);
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(WORLD_MIN*PIXEL, WORLD_MIN*PIXEL, (WORLD_MAX-WORLD_MIN)*PIXEL*2, (WORLD_MAX-WORLD_MIN)*PIXEL*2);
 
-  // Grid
-  ctx.strokeStyle = scale > 0.8 ? "#ccc" : "#ddd";
-  ctx.lineWidth = 1 / scale;
-  const left   = -offsetX / scale;
-  const top    = -offsetY / scale;
-  const right  = left + canvas.width  / scale;
-  const bottom = top  + canvas.height / scale;
+  // Grid (nur sichtbar bei > 0.7 zoom)
+  if (scale > 0.7) {
+    ctx.strokeStyle = scale > 1.5 ? "#444" : "#333";
+    ctx.lineWidth = 1 / scale;
 
-  const xStart = Math.floor(left  / PIXEL) * PIXEL;
-  const yStart = Math.floor(top   / PIXEL) * PIXEL;
+    const left   = -offsetX / scale;
+    const top    = -offsetY / scale;
+    const right  = left + canvas.width / scale;
+    const bottom = top + canvas.height / scale;
 
-  for (let x = xStart; x < right; x += PIXEL) {
-    ctx.beginPath();
-    ctx.moveTo(x, top);
-    ctx.lineTo(x, bottom);
-    ctx.stroke();
-  }
-  for (let y = yStart; y < bottom; y += PIXEL) {
-    ctx.beginPath();
-    ctx.moveTo(left, y);
-    ctx.lineTo(right, y);
-    ctx.stroke();
+    const xStart = Math.floor(left  / PIXEL) * PIXEL;
+    const yStart = Math.floor(top   / PIXEL) * PIXEL;
+
+    for (let x = xStart; x < right;  x += PIXEL) {
+      ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
+    }
+    for (let y = yStart; y < bottom; y += PIXEL) {
+      ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+    }
   }
 
   // Pixel
   pixels.forEach((color, key) => {
     const [px, py] = key.split('_').map(Number);
+    if (px < WORLD_MIN || px > WORLD_MAX || py < WORLD_MIN || py > WORLD_MAX) return;
     ctx.fillStyle = color;
     ctx.fillRect(px * PIXEL + 1, py * PIXEL + 1, PIXEL - 2, PIXEL - 2);
   });
 
   ctx.restore();
-
   requestAnimationFrame(draw);
 }
 draw();
 
-// ===== Firebase =====
+// ===== Firebase Listener =====
 onSnapshot(collection(db, "pixels"), snap => {
   snap.docChanges().forEach(change => {
     if (change.type === "added" || change.type === "modified") {
@@ -146,7 +202,7 @@ onSnapshot(collection(db, "pixels"), snap => {
   isDirty = true;
 });
 
-// ===== Hilfsfunktion: Screen → World Koordinate =====
+// ===== Koordinaten Konvertierung =====
 function screenToWorld(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
   const sx = clientX - rect.left;
@@ -157,11 +213,29 @@ function screenToWorld(clientX, clientY) {
   };
 }
 
-// ===== Pixel platzieren =====
+function canPlace() {
+  return Date.now() - lastPlaceTime >= COOLDOWN_MS;
+}
+
+// ===== Pixel platzieren (mit Cooldown + Weltbegrenzung) =====
 function placePixel(clientX, clientY) {
+  if (!canPlace()) {
+    const remain = Math.ceil((COOLDOWN_MS - (Date.now() - lastPlaceTime)) / 1000);
+    status.textContent = `Warte noch ${remain} s ...`;
+    setTimeout(() => { if (!canPlace()) status.textContent = `Warte...`; }, 900);
+    return;
+  }
+
   const {x, y} = screenToWorld(clientX, clientY);
-  const ix = Math.floor(x);
-  const iy = Math.floor(y);
+  const ix = Math.round(x);  // round statt floor → fühlt sich besser an
+  const iy = Math.round(y);
+
+  if (ix < WORLD_MIN || ix > WORLD_MAX || iy < WORLD_MIN || iy > WORLD_MAX) {
+    status.textContent = "Außerhalb der Welt!";
+    setTimeout(() => status.textContent = "", 1800);
+    return;
+  }
+
   const id = `${ix}_${iy}`;
 
   setDoc(doc(db, "pixels", id), {
@@ -169,10 +243,21 @@ function placePixel(clientX, clientY) {
     y: iy,
     color: currentColor,
     time: serverTimestamp()
-  }).catch(err => console.error(err));
+  }).then(() => {
+    lastPlaceTime = Date.now();
+    status.textContent = `Pixel gesetzt • Nächstes in 30 s`;
+    setTimeout(() => {
+      if (canPlace()) status.textContent = "Bereit!";
+    }, COOLDOWN_MS);
+  }).catch(err => {
+    console.error(err);
+    status.textContent = "Fehler beim Speichern";
+  });
+
+  isDirty = true;
 }
 
-// ===== Touch handling (Pinch + Pan + Draw) =====
+// ===== Touch handling =====
 let lastTouches = null;
 
 canvas.addEventListener("touchstart", e => {
@@ -185,14 +270,13 @@ canvas.addEventListener("touchmove", e => {
   const touches = e.touches;
 
   if (touches.length === 1) {
-    // Einzelner Finger → malen
+    // Malen
     placePixel(touches[0].clientX, touches[0].clientY);
-    isDirty = true;
   }
   else if (touches.length === 2 && lastTouches?.length === 2) {
-    // Pinch + Pan mit zwei Fingern
-    const [t1, t2]     = touches;
-    const [p1, p2]     = lastTouches;
+    // Pinch-Zoom + Pan
+    const [t1, t2] = touches;
+    const [p1, p2] = lastTouches;
 
     const midX = (t1.clientX + t2.clientX) / 2;
     const midY = (t1.clientY + t2.clientY) / 2;
@@ -203,18 +287,17 @@ canvas.addEventListener("touchmove", e => {
     const distOld = Math.hypot(p2.clientX - p1.clientX, p2.clientY - p1.clientY);
     const distNew = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
 
-    if (distOld > 4) {   // vermeide Rauschen bei fast gleicher Position
+    if (distOld > 8) {
       const zoom = distNew / distOld;
       const oldScale = scale;
-      scale *= zoom ** 0.85;   // etwas sanfter
-      scale = Math.max(0.25, Math.min(12, scale));
+      scale *= Math.pow(zoom, 0.9);
+      scale = Math.max(0.2, Math.min(20, scale));
 
-      // Zoom zum Mittelpunkt der Finger
       offsetX = midX - (midX - offsetX) * (scale / oldScale);
       offsetY = midY - (midY - offsetY) * (scale / oldScale);
     }
 
-    // Pan (auch bei sehr kleinem Pinch)
+    // Pan
     offsetX += (midX - prevMidX);
     offsetY += (midY - prevMidY);
 
@@ -223,42 +306,35 @@ canvas.addEventListener("touchmove", e => {
   }
 }, {passive: false});
 
-canvas.addEventListener("touchend", e => {
+canvas.addEventListener("touchend", () => {
   if (e.touches.length < 2) lastTouches = null;
 });
 
-// ===== Mouse (Desktop) =====
+// ===== Mouse =====
 let isDrawing = false;
-let lastMouseX = 0, lastMouseY = 0;
 
 canvas.addEventListener("mousedown", e => {
-  if (e.button === 0) {
-    isDrawing = true;
-    placePixel(e.clientX, e.clientY);
-    isDirty = true;
-  }
+  if (e.button !== 0) return;
+  isDrawing = true;
+  placePixel(e.clientX, e.clientY);
 });
 
 canvas.addEventListener("mousemove", e => {
-  if (isDrawing) {
-    placePixel(e.clientX, e.clientY);
-    isDirty = true;
-  }
+  if (!isDrawing) return;
+  placePixel(e.clientX, e.clientY);
 });
 
 canvas.addEventListener("mouseup",   () => isDrawing = false);
-canvas.addEventListener("mouseleave", () => isDrawing = false);
+canvas.addEventListener("mouseleave",() => isDrawing = false);
 
-// Wheel Zoom (auch Ctrl + Scroll auf Trackpad / Maus)
+// ===== Wheel Zoom =====
 canvas.addEventListener("wheel", e => {
   e.preventDefault();
-
-  const delta = e.deltaY < 0 ? 1.12 : 0.88;
+  const delta = e.deltaY < 0 ? 1.14 : 0.86;
   const oldScale = scale;
   scale *= delta;
-  scale = Math.max(0.25, Math.min(12, scale));
+  scale = Math.max(0.2, Math.min(20, scale));
 
-  // Zoom zur Mausposition
   const mx = e.clientX - canvas.getBoundingClientRect().left;
   const my = e.clientY - canvas.getBoundingClientRect().top;
 
@@ -267,7 +343,6 @@ canvas.addEventListener("wheel", e => {
 
   isDirty = true;
 }, {passive: false});
-
 </script>
 </body>
 </html>
