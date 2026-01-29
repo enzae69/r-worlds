@@ -3,65 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <title>r-world – Pixel mit Cooldown & besserer GUI</title>
+  <title>r-world – Pixel Art mit Google Login & Radiergummi</title>
   <style>
     body {
-      margin:0; overflow:hidden; background:#111;
-      font-family: system-ui, sans-serif;
-      color: #eee;
+      margin:0; overflow:hidden; background:#f0f4f8;
+      font-family: system-ui, sans-serif; color:#333;
     }
     #canvas {
       width:100vw; height:100vh; display:block;
-      background:#222; touch-action: none;
+      background:#e8f0fe; touch-action: none;
       -webkit-user-select: none;
-      -webkit-tap-highlight-color: transparent;
     }
     #gui {
       position: fixed; top: 12px; left: 12px; z-index: 100;
-      background: rgba(30,30,40,0.94);
-      padding: 12px 14px;
-      border-radius: 12px;
-      box-shadow: 0 3px 20px rgba(0,0,0,0.6);
-      backdrop-filter: blur(6px);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.96);
+      padding: 12px 16px;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+      backdrop-filter: blur(8px);
+      border: 1px solid #ddd;
+      min-width: 220px;
     }
     #colors {
       display: grid;
-      grid-template-columns: repeat(4, 38px);
-      gap: 8px;
-      margin-top: 10px;
+      grid-template-columns: repeat(4, 42px);
+      gap: 10px;
+      margin: 12px 0 8px;
     }
     #colors button {
-      width: 38px; height: 38px;
-      border: 2.5px solid #444;
-      border-radius: 9px;
+      width: 42px; height: 42px;
+      border: 3px solid #eee;
+      border-radius: 10px;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-      transition: all 0.13s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      transition: all 0.15s;
     }
-    #colors button:hover {
-      transform: scale(1.14);
-      border-color: #aaa;
-    }
+    #colors button:hover { transform: scale(1.15); border-color: #bbb; }
     #colors button.selected {
-      border-color: #fff;
-      box-shadow: 0 0 0 3px rgba(255,255,255,0.4);
-      transform: scale(1.08);
+      border-color: #4285f4;
+      box-shadow: 0 0 0 4px rgba(66,133,244,0.3);
+      transform: scale(1.1);
     }
-    #status {
-      font-size: 0.92rem;
-      margin-top: 8px;
-      min-height: 1.3em;
-      color: #aaa;
+    #profile {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 10px; font-size: 0.95rem;
     }
+    #profile img {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 2px solid #4285f4;
+    }
+    #loginBtn, #logoutBtn {
+      padding: 8px 14px;
+      border: none; border-radius: 8px;
+      cursor: pointer; font-weight: 500;
+      background: #4285f4; color: white;
+      margin: 6px 0;
+    }
+    #logoutBtn { background: #ea4335; }
+    #status { font-size: 0.9rem; color: #555; min-height: 1.4em; }
   </style>
 </head>
 <body>
 
 <div id="gui">
-  <div><strong>Farbe</strong></div>
+  <div id="profile">
+    <img id="userPhoto" src="" alt="" style="display:none;">
+    <span id="userName">Nicht angemeldet</span>
+  </div>
+  <button id="loginBtn">Mit Google anmelden</button>
+  <button id="logoutBtn" style="display:none;">Abmelden</button>
+
+  <div><strong>Farbe wählen</strong></div>
   <div id="colors"></div>
-  <div id="status">Bereit • Cooldown: frei</div>
+  <div id="status">Bereit zum Malen!</div>
 </div>
 
 <canvas id="canvas"></canvas>
@@ -69,7 +83,8 @@
 <script type="module">
 // ===== Firebase Setup =====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCXNvSbBsRVgyKJUmckxpm_WHhC6xflSTg",
@@ -82,27 +97,28 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
 // ===== Canvas & Vars =====
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const status = document.getElementById('status');
 
-const PIXEL = 32;           // etwas kleiner → mehr Übersicht
-const WORLD_MIN = -200;     // Welt wird begrenzt
-const WORLD_MAX =  200;
-let currentColor = "#ffffff";
-const pixels = new Map();
+const PIXEL = 32;
+const WORLD_MIN = -300;
+const WORLD_MAX = 300;
+
+let currentColor = "#000000";
+let isEraser = false;
+const pixels = new Map();       // { "x_y": {color, uid} }
+let user = null;
 
 // Viewport
 let scale = 1;
 let offsetX = 0;
 let offsetY = 0;
 let isDirty = true;
-
-// Cooldown
-let lastPlaceTime = 0;
-const COOLDOWN_MS = 30_000;   // 30 Sekunden – du kannst hier z. B. 60000 machen (1 min)
 
 // Resize
 function resize() {
@@ -113,13 +129,8 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-// Farbpalette + GUI
-const palette = [
-  "#000000","#ffffff","#ff0000","#00ff00","#0000ff",
-  "#ffff00","#ff00ff","#00ffff","#ff8800","#88ff00",
-  "#8800ff","#ff0088","#888888","#444444","#ffcc99"
-];
-
+// Farbpalette
+const palette = ["#000","#fff","#f00","#0f0","#00f","#ff0","#f0f","#0ff","#fa0","#0fa","#a0f","#f80","#888","#444"];
 const colorDiv = document.getElementById('colors');
 let colorButtons = [];
 
@@ -129,21 +140,60 @@ palette.forEach(c => {
   b.dataset.color = c;
   b.onclick = () => {
     currentColor = c;
+    isEraser = false;
     colorButtons.forEach(btn => btn.classList.remove('selected'));
     b.classList.add('selected');
   };
   colorDiv.appendChild(b);
   colorButtons.push(b);
 });
-// Erste Farbe vorselektieren
-colorButtons[0].click();
 
-// ===== Draw loop =====
-function draw() {
-  if (!isDirty) {
-    requestAnimationFrame(draw);
-    return;
+// Eraser Button
+const eraserBtn = document.createElement('button');
+eraserBtn.style.background = 'linear-gradient(135deg, #ccc, #999)';
+eraserBtn.innerHTML = '🧼'; // oder text: 'Radierer'
+eraserBtn.onclick = () => {
+  isEraser = true;
+  colorButtons.forEach(btn => btn.classList.remove('selected'));
+  eraserBtn.classList.add('selected');
+};
+colorDiv.appendChild(eraserBtn);
+
+// ===== Auth Listener =====
+onAuthStateChanged(auth, u => {
+  user = u;
+  if (user) {
+    document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
+    if (user.photoURL) {
+      document.getElementById('userPhoto').src = user.photoURL;
+      document.getElementById('userPhoto').style.display = 'block';
+    }
+    document.getElementById('loginBtn').style.display = 'none';
+    document.getElementById('logoutBtn').style.display = 'block';
+    status.textContent = `Hallo ${user.displayName}!`;
+  } else {
+    document.getElementById('userName').textContent = 'Nicht angemeldet';
+    document.getElementById('userPhoto').style.display = 'none';
+    document.getElementById('loginBtn').style.display = 'block';
+    document.getElementById('logoutBtn').style.display = 'none';
+    status.textContent = 'Melde dich an, um zu malen!';
   }
+});
+
+document.getElementById('loginBtn').onclick = () => {
+  signInWithPopup(auth, provider).catch(err => {
+    console.error(err);
+    status.textContent = 'Login fehlgeschlagen';
+  });
+};
+
+document.getElementById('logoutBtn').onclick = () => {
+  signOut(auth);
+};
+
+// ===== Draw =====
+function draw() {
+  if (!isDirty) return requestAnimationFrame(draw);
   isDirty = false;
 
   ctx.setTransform(1,0,0,1,0,0);
@@ -154,38 +204,42 @@ function draw() {
   ctx.scale(scale, scale);
 
   // Hintergrund
-  ctx.fillStyle = "#1a1a1a";
-  ctx.fillRect(WORLD_MIN*PIXEL, WORLD_MIN*PIXEL, (WORLD_MAX-WORLD_MIN)*PIXEL*2, (WORLD_MAX-WORLD_MIN)*PIXEL*2);
+  ctx.fillStyle = "#e8f0fe";
+  ctx.fillRect(WORLD_MIN*PIXEL, WORLD_MIN*PIXEL, (WORLD_MAX-WORLD_MIN+1)*PIXEL, (WORLD_MAX-WORLD_MIN+1)*PIXEL);
 
-  // Grid (nur sichtbar bei > 0.7 zoom)
-  if (scale > 0.7) {
-    ctx.strokeStyle = scale > 1.5 ? "#444" : "#333";
-    ctx.lineWidth = 1 / scale;
+  // Grid immer sichtbar
+  ctx.strokeStyle = scale > 2 ? "#ccc" : (scale > 0.6 ? "#ddd" : "#e0e0e0");
+  ctx.lineWidth = 1 / Math.max(scale, 0.3);
 
-    const left   = -offsetX / scale;
-    const top    = -offsetY / scale;
-    const right  = left + canvas.width / scale;
-    const bottom = top + canvas.height / scale;
+  const left   = -offsetX / scale;
+  const top    = -offsetY / scale;
+  const right  = left + canvas.width / scale;
+  const bottom = top + canvas.height / scale;
 
-    const xStart = Math.floor(left  / PIXEL) * PIXEL;
-    const yStart = Math.floor(top   / PIXEL) * PIXEL;
+  const xStart = Math.floor(left / PIXEL) * PIXEL;
+  const yStart = Math.floor(top / PIXEL) * PIXEL;
 
-    for (let x = xStart; x < right;  x += PIXEL) {
-      ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
-    }
-    for (let y = yStart; y < bottom; y += PIXEL) {
-      ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
-    }
+  for (let x = xStart; x <= right; x += PIXEL) {
+    ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
+  }
+  for (let y = yStart; y <= bottom; y += PIXEL) {
+    ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
   }
 
-  // Pixel
-  pixels.forEach((color, key) => {
+  // Pixel mit Schatten
+  ctx.shadowColor = "rgba(0,0,0,0.3)";
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
+
+  pixels.forEach((data, key) => {
     const [px, py] = key.split('_').map(Number);
     if (px < WORLD_MIN || px > WORLD_MAX || py < WORLD_MIN || py > WORLD_MAX) return;
-    ctx.fillStyle = color;
+    ctx.fillStyle = data.color;
     ctx.fillRect(px * PIXEL + 1, py * PIXEL + 1, PIXEL - 2, PIXEL - 2);
   });
 
+  ctx.shadowBlur = 0; // reset shadow
   ctx.restore();
   requestAnimationFrame(draw);
 }
@@ -194,70 +248,102 @@ draw();
 // ===== Firebase Listener =====
 onSnapshot(collection(db, "pixels"), snap => {
   snap.docChanges().forEach(change => {
-    if (change.type === "added" || change.type === "modified") {
-      const d = change.doc.data();
-      pixels.set(`${d.x}_${d.y}`, d.color);
+    const d = change.doc.data();
+    const key = `${d.x}_${d.y}`;
+    if (change.type === "removed") {
+      pixels.delete(key);
+    } else {
+      pixels.set(key, {color: d.color, uid: d.uid});
     }
   });
   isDirty = true;
 });
 
-// ===== Koordinaten Konvertierung =====
+// ===== Koordinaten =====
 function screenToWorld(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
-  const sx = clientX - rect.left;
-  const sy = clientY - rect.top;
   return {
-    x: (sx - offsetX) / scale / PIXEL,
-    y: (sy - offsetY) / scale / PIXEL
+    x: (clientX - rect.left - offsetX) / scale / PIXEL,
+    y: (clientY - rect.top - offsetY) / scale / PIXEL
   };
 }
 
-function canPlace() {
-  return Date.now() - lastPlaceTime >= COOLDOWN_MS;
-}
-
-// ===== Pixel platzieren (mit Cooldown + Weltbegrenzung) =====
+// ===== Pixel platzieren / löschen =====
 function placePixel(clientX, clientY) {
-  if (!canPlace()) {
-    const remain = Math.ceil((COOLDOWN_MS - (Date.now() - lastPlaceTime)) / 1000);
-    status.textContent = `Warte noch ${remain} s ...`;
-    setTimeout(() => { if (!canPlace()) status.textContent = `Warte...`; }, 900);
+  if (!user) {
+    status.textContent = 'Bitte erst mit Google anmelden!';
     return;
   }
 
   const {x, y} = screenToWorld(clientX, clientY);
-  const ix = Math.round(x);  // round statt floor → fühlt sich besser an
+  const ix = Math.round(x);
   const iy = Math.round(y);
 
-  if (ix < WORLD_MIN || ix > WORLD_MAX || iy < WORLD_MIN || iy > WORLD_MAX) {
-    status.textContent = "Außerhalb der Welt!";
-    setTimeout(() => status.textContent = "", 1800);
-    return;
-  }
+  if (ix < WORLD_MIN || ix > WORLD_MAX || iy < WORLD_MIN || iy > WORLD_MAX) return;
 
   const id = `${ix}_${iy}`;
 
-  setDoc(doc(db, "pixels", id), {
-    x: ix,
-    y: iy,
-    color: currentColor,
-    time: serverTimestamp()
-  }).then(() => {
-    lastPlaceTime = Date.now();
-    status.textContent = `Pixel gesetzt • Nächstes in 30 s`;
-    setTimeout(() => {
-      if (canPlace()) status.textContent = "Bereit!";
-    }, COOLDOWN_MS);
-  }).catch(err => {
-    console.error(err);
-    status.textContent = "Fehler beim Speichern";
-  });
+  if (isEraser) {
+    // Nur löschen, wenn eigener Pixel
+    if (pixels.has(id) && pixels.get(id).uid === user.uid) {
+      deleteDoc(doc(db, "pixels", id)).catch(console.error);
+      status.textContent = 'Pixel gelöscht!';
+    }
+  } else {
+    setDoc(doc(db, "pixels", id), {
+      x: ix,
+      y: iy,
+      color: currentColor,
+      uid: user.uid,
+      time: serverTimestamp()
+    }, {merge: true}).catch(console.error);
+  }
 
   isDirty = true;
 }
 
-// ===== Touch handling =====
+// ===== Input Handling (Mouse + Touch) =====
+let isDrawing = false;
+
+function handleDown(e) {
+  e.preventDefault();
+  isDrawing = true;
+  placePixel(e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY);
+}
+
+function handleMove(e) {
+  e.preventDefault();
+  if (!isDrawing) return;
+  placePixel(e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY);
+}
+
+canvas.addEventListener('mousedown', handleDown);
+canvas.addEventListener('mousemove', handleMove);
+canvas.addEventListener('mouseup',   () => isDrawing = false);
+canvas.addEventListener('mouseleave',() => isDrawing = false);
+
+canvas.addEventListener('touchstart', handleDown, {passive:false});
+canvas.addEventListener('touchmove',  handleMove, {passive:false});
+canvas.addEventListener('touchend',   () => isDrawing = false);
+
+// ===== Zoom (Wheel) =====
+canvas.addEventListener("wheel", e => {
+  e.preventDefault();
+  const delta = e.deltaY < 0 ? 1.15 : 0.87;
+  const oldScale = scale;
+  scale *= delta;
+  scale = Math.max(0.15, Math.min(25, scale));
+
+  const mx = e.clientX - canvas.getBoundingClientRect().left;
+  const my = e.clientY - canvas.getBoundingClientRect().top;
+
+  offsetX = mx - (mx - offsetX) * (scale / oldScale);
+  offsetY = my - (my - offsetY) * (scale / oldScale);
+
+  isDirty = true;
+}, {passive: false});
+
+// Pinch-Zoom + Pan (Touch)
 let lastTouches = null;
 
 canvas.addEventListener("touchstart", e => {
@@ -269,37 +355,32 @@ canvas.addEventListener("touchmove", e => {
   e.preventDefault();
   const touches = e.touches;
 
-  if (touches.length === 1) {
-    // Malen
+  if (touches.length === 1 && !isDrawing) {
+    // Single touch → draw
     placePixel(touches[0].clientX, touches[0].clientY);
   }
   else if (touches.length === 2 && lastTouches?.length === 2) {
-    // Pinch-Zoom + Pan
     const [t1, t2] = touches;
     const [p1, p2] = lastTouches;
+    const midX = (t1.clientX + t2.clientX)/2;
+    const midY = (t1.clientY + t2.clientY)/2;
+    const prevMidX = (p1.clientX + p2.clientX)/2;
+    const prevMidY = (p1.clientY + p2.clientY)/2;
 
-    const midX = (t1.clientX + t2.clientX) / 2;
-    const midY = (t1.clientY + t2.clientY) / 2;
-    const prevMidX = (p1.clientX + p2.clientX) / 2;
-    const prevMidY = (p1.clientY + p2.clientY) / 2;
+    const distOld = Math.hypot(p2.clientX-p1.clientX, p2.clientY-p1.clientY);
+    const distNew = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
 
-    // Zoom
-    const distOld = Math.hypot(p2.clientX - p1.clientX, p2.clientY - p1.clientY);
-    const distNew = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-
-    if (distOld > 8) {
+    if (distOld > 10) {
       const zoom = distNew / distOld;
       const oldScale = scale;
-      scale *= Math.pow(zoom, 0.9);
-      scale = Math.max(0.2, Math.min(20, scale));
-
+      scale *= zoom ** 0.92;
+      scale = Math.max(0.15, Math.min(25, scale));
       offsetX = midX - (midX - offsetX) * (scale / oldScale);
       offsetY = midY - (midY - offsetY) * (scale / oldScale);
     }
 
-    // Pan
-    offsetX += (midX - prevMidX);
-    offsetY += (midY - prevMidY);
+    offsetX += midX - prevMidX;
+    offsetY += midY - prevMidY;
 
     isDirty = true;
     lastTouches = [...touches];
@@ -310,39 +391,7 @@ canvas.addEventListener("touchend", () => {
   if (e.touches.length < 2) lastTouches = null;
 });
 
-// ===== Mouse =====
-let isDrawing = false;
-
-canvas.addEventListener("mousedown", e => {
-  if (e.button !== 0) return;
-  isDrawing = true;
-  placePixel(e.clientX, e.clientY);
-});
-
-canvas.addEventListener("mousemove", e => {
-  if (!isDrawing) return;
-  placePixel(e.clientX, e.clientY);
-});
-
-canvas.addEventListener("mouseup",   () => isDrawing = false);
-canvas.addEventListener("mouseleave",() => isDrawing = false);
-
-// ===== Wheel Zoom =====
-canvas.addEventListener("wheel", e => {
-  e.preventDefault();
-  const delta = e.deltaY < 0 ? 1.14 : 0.86;
-  const oldScale = scale;
-  scale *= delta;
-  scale = Math.max(0.2, Math.min(20, scale));
-
-  const mx = e.clientX - canvas.getBoundingClientRect().left;
-  const my = e.clientY - canvas.getBoundingClientRect().top;
-
-  offsetX = mx - (mx - offsetX) * (scale / oldScale);
-  offsetY = my - (my - offsetY) * (scale / oldScale);
-
-  isDirty = true;
-}, {passive: false});
+requestAnimationFrame(draw);
 </script>
 </body>
 </html>
