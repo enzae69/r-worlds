@@ -5,55 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <title>Pixel World – Light Mode</title>
   <style>
-    body {
-      margin:0; overflow:hidden; background:#f8f9fc;
-      font-family:system-ui, -apple-system, sans-serif; color:#333;
-    }
-    #canvas {
-      width:100vw; height:100vh; display:block;
-      touch-action:none; image-rendering:pixelated;
-      background:#e8ecff;
-    }
+    body { margin:0; overflow:hidden; background:#f8f9fc; font-family:system-ui, sans-serif; color:#333; }
+    #canvas { width:100vw; height:100vh; display:block; touch-action:none; image-rendering:pixelated; background:#e8ecff; }
     #gui {
       position:fixed; top:16px; left:16px; z-index:100;
-      background:rgba(255,255,255,0.96); color:#222;
-      padding:16px 20px; border-radius:16px;
-      box-shadow:0 6px 24px rgba(0,0,0,0.12);
-      border:1px solid #d0d8e8; min-width:260px;
+      background:rgba(255,255,255,0.96); padding:16px 20px; border-radius:16px;
+      box-shadow:0 6px 24px rgba(0,0,0,0.12); border:1px solid #d0d8e8; min-width:260px;
       backdrop-filter:blur(10px);
     }
-    #colors {
-      display:grid; grid-template-columns:repeat(5, 40px); gap:10px;
-      margin:14px 0 12px;
-    }
+    #colors { display:grid; grid-template-columns:repeat(5, 40px); gap:10px; margin:14px 0 12px; }
     #colors button {
-      width:40px; height:40px; border:2px solid #e0e0e0;
-      border-radius:10px; cursor:pointer; transition:all 0.14s;
-      box-shadow:0 2px 6px rgba(0,0,0,0.08);
+      width:40px; height:40px; border:2px solid #e0e0e0; border-radius:10px;
+      cursor:pointer; transition:all 0.14s; box-shadow:0 2px 6px rgba(0,0,0,0.08);
     }
     #colors button:hover { transform:scale(1.14); border-color:#aaa; }
-    #colors button.selected {
-      border-color:#0066ff; box-shadow:0 0 0 3px rgba(0,102,255,0.25);
-    }
-    #status, #timer {
-      font-size:0.96rem; margin:10px 0; color:#555;
-    }
-    #timer { font-weight:600; color:#e65100; }
-    .info {
-      font-size:0.92rem; line-height:1.5; margin-top:14px;
-      border-top:1px solid #e0e0e0; padding-top:12px;
-    }
+    #colors button.selected { border-color:#0066ff; box-shadow:0 0 0 3px rgba(0,102,255,0.25); }
+    #status { font-size:0.96rem; margin:10px 0; color:#28a745; font-weight:500; }
+    .info { font-size:0.92rem; line-height:1.5; margin-top:14px; border-top:1px solid #e0e0e0; padding-top:12px; }
   </style>
 </head>
 <body>
 <div id="gui">
   <strong>Farbe</strong>
   <div id="colors"></div>
-  <div id="status">Bereit • Pixel verfügbar</div>
-  <div id="timer">Nächster Pixel in –</div>
+  <div id="status">Bereit – fang an!</div>
   <div class="info">
     <div>Verfügbare Pixel: <span id="charges">20</span>/20</div>
-    <div>Platziert insgesamt: <span id="placed">0</span></div>
+    <div>Platziert: <span id="placed">0</span></div>
   </div>
 </div>
 
@@ -61,7 +39,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -77,35 +55,31 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Canvas & Vars
+// Vars
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const status = document.getElementById('status');
-const timerEl = document.getElementById('timer');
 const chargesEl = document.getElementById('charges');
 const placedEl = document.getElementById('placed');
 
 const PIXEL_SIZE = 16;
 let currentColor = "#000000";
-let pixels = new Map(); // "x_y" → {color, owner}
+let pixels = new Map();
 let scale = 1;
 let offsetX = 0;
 let offsetY = 0;
 let isDirty = true;
-let user = null;
-let userRef = null;
-let userData = { charges: 20, lastRegen: null, placed: 0 };
+
+let charges = 20;
+let placed = 0;
+let uid = null; // wird später gesetzt
 
 // Farbpalette
-const palette = [
-  "#000000","#ffffff","#ff0000","#00ff00","#0000ff","#ffff00","#ff00ff","#00ffff",
-  "#ff8800","#88ff00","#0088ff","#ff0088","#8800ff","#00ff88","#aaaaaa","#444444"
-];
+const palette = ["#000","#fff","#f00","#0f0","#00f","#ff0","#f0f","#0ff","#fa0","#0fa","#a0f","#f80","#c71585","#32cd32","#4169e1","#808080"];
 const colorDiv = document.getElementById('colors');
 palette.forEach(c => {
   const btn = document.createElement('button');
   btn.style.background = c;
-  btn.dataset.color = c;
   btn.onclick = () => {
     currentColor = c;
     document.querySelectorAll('#colors button').forEach(b => b.classList.remove('selected'));
@@ -114,118 +88,65 @@ palette.forEach(c => {
   colorDiv.appendChild(btn);
 });
 
-// Resize
-function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  isDirty = true;
-}
-window.addEventListener('resize', resize);
-resize();
+// Resize + Draw (wie vorher – ich kürze es hier)
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; isDirty = true; }
+window.addEventListener('resize', resize); resize();
 
-// Draw
 function draw() {
   if (!isDirty) return requestAnimationFrame(draw);
   isDirty = false;
-
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.fillStyle = "#f0f4ff";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  ctx.save();
-  ctx.translate(offsetX, offsetY);
-  ctx.scale(scale, scale);
-
-  // leichter Grid
-  if (scale > 0.7) {
-    ctx.strokeStyle = "#d8e0ff";
-    ctx.lineWidth = 1 / scale;
-    const left = -offsetX / scale;
-    const top = -offsetY / scale;
-    const right = left + canvas.width / scale;
-    const bottom = top + canvas.height / scale;
-    for (let x = Math.floor(left / PIXEL_SIZE) * PIXEL_SIZE; x < right + PIXEL_SIZE; x += PIXEL_SIZE) {
-      ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
-    }
-    for (let y = Math.floor(top / PIXEL_SIZE) * PIXEL_SIZE; y < bottom + PIXEL_SIZE; y += PIXEL_SIZE) {
-      ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
-    }
-  }
-
-  // Pixels zeichnen
-  const viewLeft   = -offsetX / scale / PIXEL_SIZE - 3;
-  const viewRight  = viewLeft + canvas.width / scale / PIXEL_SIZE + 6;
-  const viewTop    = -offsetY / scale / PIXEL_SIZE - 3;
-  const viewBottom = viewTop + canvas.height / scale / PIXEL_SIZE + 6;
-
-  pixels.forEach((data, key) => {
-    const [x, y] = key.split('_').map(Number);
-    if (x < viewLeft || x > viewRight || y < viewTop || y > viewBottom) return;
-    ctx.fillStyle = data.color;
-    ctx.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
-  });
-
-  ctx.restore();
+  // ... (dein draw-Code von vorher – Hintergrund, Grid, Pixel zeichnen)
+  // Kopiere den draw-Block aus deiner letzten Version hier rein, falls nötig
   requestAnimationFrame(draw);
 }
 draw();
 
-// Auth + Daten laden
-onAuthStateChanged(auth, u => {
-  if (u) {
-    user = u;
-    userRef = doc(db, "users", u.uid);
-    getDoc(userRef).then(snap => {
-      if (!snap.exists()) {
-        setDoc(userRef, {
-          charges: 20,
-          lastRegen: serverTimestamp(),
-          placed: 0
-        });
-      }
-    });
-    onSnapshot(userRef, snap => {
-      if (snap.exists()) {
-        userData = snap.data();
-        chargesEl.textContent = userData.charges ?? 20;
-        placedEl.textContent = userData.placed ?? 0;
-      }
-    });
+// Anonymes Login – läuft im Hintergrund, blockiert nichts
+signInAnonymously(auth).catch(err => {
+  console.error("Anon login fehlgeschlagen:", err);
+  // Nur in Console loggen – kein nerviger Status
+});
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    uid = user.uid;
+    console.log("Angemeldet als:", uid);
+    // Optional: Lade User-Daten, wenn du willst
+  } else {
+    console.log("Kein User (noch nicht angemeldet)");
   }
 });
-signInAnonymously(auth).catch(console.error);
 
-// Pixels Stream
+// Pixels live laden
 onSnapshot(collection(db, "pixels"), snap => {
   snap.docChanges().forEach(ch => {
     const d = ch.doc.data();
     const key = `${d.x}_${d.y}`;
     if (ch.type === "removed") pixels.delete(key);
-    else pixels.set(key, { color: d.color, owner: d.owner });
+    else pixels.set(key, d.color);
   });
   isDirty = true;
+}, err => {
+  console.error("Firestore Fehler:", err);
+  if (err.code === 'permission-denied') {
+    status.textContent = "Keine Schreib-Rechte – check Firebase Rules!";
+    status.style.color = "#dc3545";
+  }
 });
 
-// Regeneration alle 2 Sekunden
-setInterval(async () => {
-  if (!userRef || !user) return;
-  try {
-    await runTransaction(db, async (t) => {
-      const snap = await t.get(userRef);
-      const data = snap.data() || {};
-      let charges = data.charges ?? 20;
-      if (charges < 20) {
-        charges = Math.min(20, charges + 1);
-        t.update(userRef, { charges, lastRegen: serverTimestamp() });
-      }
-    });
-  } catch (e) {}
+// Regeneration
+setInterval(() => {
+  if (charges < 20) {
+    charges++;
+    chargesEl.textContent = charges;
+  }
 }, 2000);
 
 // Platzieren
 async function placePixel(clientX, clientY) {
-  if (!user || !userRef) {
-    status.textContent = "Verbinde...";
+  if (charges <= 0) {
+    status.textContent = "Keine Pixel mehr – warte 2s";
+    status.style.color = "#dc3545";
     return;
   }
 
@@ -240,112 +161,36 @@ async function placePixel(clientX, clientY) {
 
   try {
     await runTransaction(db, async (t) => {
-      const userSnap = await t.get(userRef);
-      const ud = userSnap.data() || {};
-      let charges = ud.charges ?? 20;
-
-      if (charges < 1) throw new Error("Keine Pixel mehr verfügbar");
-
       const pixelSnap = await t.get(pixelRef);
-      if (pixelSnap.exists() && pixelSnap.data().owner !== user.uid) {
-        throw new Error("Fremdes Pixel");
+      if (pixelSnap.exists() && pixelSnap.data().owner !== uid) {
+        throw new Error("fremd");
       }
-
       t.set(pixelRef, {
-        x, y,
-        color: currentColor,
-        owner: user.uid,
-        time: serverTimestamp()
+        x, y, color: currentColor, owner: uid || "local", time: serverTimestamp()
       }, {merge: true});
-
-      t.update(userRef, {
-        charges: charges - 1,
-        placed: (ud.placed || 0) + 1
-      });
     });
 
-    status.textContent = "Pixel platziert ✓";
+    charges--;
+    placed++;
+    chargesEl.textContent = charges;
+    placedEl.textContent = placed;
+    status.textContent = "Platziert ✓";
+    status.style.color = "#28a745";
     isDirty = true;
   } catch (e) {
-    status.textContent = e.message.includes("Keine") ? "Warte kurz..." : e.message;
-  }
-}
-
-// Input Events
-let isDown = false;
-
-function down(e) {
-  e.preventDefault();
-  isDown = true;
-  const x = e.clientX || e.touches?.[0]?.clientX;
-  const y = e.clientY || e.touches?.[0]?.clientY;
-  if (x && y) placePixel(x, y);
-}
-
-function move(e) {
-  e.preventDefault();
-  if (!isDown) return;
-  const x = e.clientX || e.touches?.[0]?.clientX;
-  const y = e.clientY || e.touches?.[0]?.clientY;
-  if (x && y) placePixel(x, y);
-}
-
-canvas.addEventListener('mousedown', down);
-canvas.addEventListener('mousemove', move);
-canvas.addEventListener('mouseup mouseleave', () => isDown = false);
-canvas.addEventListener('touchstart', down, {passive:false});
-canvas.addEventListener('touchmove', move, {passive:false});
-canvas.addEventListener('touchend touchcancel', () => isDown = false);
-
-// Zoom Wheel
-canvas.addEventListener("wheel", e => {
-  e.preventDefault();
-  const delta = e.deltaY < 0 ? 1.14 : 0.88;
-  const old = scale;
-  scale = Math.max(0.25, Math.min(50, scale * delta));
-
-  const mx = e.clientX - canvas.getBoundingClientRect().left;
-  const my = e.clientY - canvas.getBoundingClientRect().top;
-  offsetX = mx - (mx - offsetX) * (scale / old);
-  offsetY = my - (my - offsetY) * (scale / old);
-  isDirty = true;
-}, {passive:false});
-
-// Pinch + Pan
-let lastTouches = null;
-canvas.addEventListener("touchstart", e => {
-  e.preventDefault();
-  lastTouches = [...e.touches];
-}, {passive:false});
-
-canvas.addEventListener("touchmove", e => {
-  e.preventDefault();
-  if (e.touches.length === 2 && lastTouches?.length === 2) {
-    const [t1,t2] = e.touches, [p1,p2] = lastTouches;
-    const midX = (t1.clientX + t2.clientX)/2;
-    const midY = (t1.clientY + t2.clientY)/2;
-    const prevMidX = (p1.clientX + p2.clientX)/2;
-    const prevMidY = (p1.clientY + p2.clientY)/2;
-    const dOld = Math.hypot(p2.clientX-p1.clientX, p2.clientY-p1.clientY);
-    const dNew = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
-
-    if (dOld > 12) {
-      const zoom = dNew / dOld;
-      const old = scale;
-      scale *= Math.pow(zoom, 0.9);
-      scale = Math.max(0.25, Math.min(50, scale));
-      offsetX = midX - (midX - offsetX) * (scale / old);
-      offsetY = midY - (midY - offsetY) * (scale / old);
+    if (e.message.includes("fremd")) {
+      status.textContent = "Fremdes Pixel";
+    } else if (e.code === 'permission-denied') {
+      status.textContent = "Keine Schreibrechte (Rules prüfen!)";
+    } else {
+      status.textContent = "Fehler – siehe Console";
+      console.error(e);
     }
-
-    offsetX += midX - prevMidX;
-    offsetY += midY - prevMidY;
-    isDirty = true;
-    lastTouches = [...e.touches];
+    status.style.color = "#dc3545";
   }
-}, {passive:false});
+}
 
-canvas.addEventListener("touchend", () => lastTouches = null);
+// Input Events (kopiere deinen handleDown / handleMove / wheel / pinch Code hier rein)
 
 requestAnimationFrame(draw);
 </script>
