@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Pixel Conquest</title>
+    <title>Pixel Conquest - Multiplayer</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght:400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
         
@@ -50,6 +50,136 @@
                 radial-gradient(circle at 80% 50%, rgba(0, 204, 255, 0.05) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
+        }
+        
+        /* Login Screen */
+        #login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        #login-screen.hidden {
+            display: none;
+        }
+        
+        .login-container {
+            background: linear-gradient(135deg, var(--bg-medium) 0%, var(--bg-light) 100%);
+            border: 2px solid var(--accent-primary);
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+        
+        .login-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .input-group label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .input-group input {
+            background: var(--bg-dark);
+            border: 2px solid var(--text-secondary);
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 1rem;
+            color: var(--text-primary);
+            font-family: 'Rajdhani', sans-serif;
+            transition: all 0.3s ease;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 15px var(--border-glow);
+        }
+        
+        .login-btn {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            color: var(--bg-dark);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--border-glow);
+        }
+        
+        .login-btn:disabled {
+            background: var(--bg-light);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .login-toggle {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-secondary);
+        }
+        
+        .login-toggle a {
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        
+        .login-toggle a:hover {
+            text-decoration: underline;
+        }
+        
+        .error-message {
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid var(--accent-danger);
+            border-radius: 6px;
+            padding: 10px;
+            color: var(--accent-danger);
+            font-size: 0.9rem;
+            text-align: center;
         }
         
         #game-container {
@@ -111,6 +241,36 @@
             font-weight: 700;
             color: var(--accent-primary);
             text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            color: var(--accent-secondary);
+        }
+        
+        .logout-btn {
+            background: var(--accent-danger);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 51, 102, 0.4);
         }
         
         #canvas-container {
@@ -242,28 +402,6 @@
             text-align: center;
         }
         
-        .tooltip {
-            position: absolute;
-            background: rgba(20, 24, 36, 0.95);
-            border: 1px solid var(--accent-primary);
-            padding: 10px 15px;
-            border-radius: 6px;
-            pointer-events: none;
-            z-index: 1000;
-            font-size: 0.9rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-        
-        .producing {
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
         #notification {
             position: fixed;
             top: 100px;
@@ -382,6 +520,20 @@
             background: var(--accent-danger);
         }
         
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
             #header {
@@ -480,7 +632,37 @@
     </style>
 </head>
 <body>
-    <div id="game-container">
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <div class="login-container">
+            <h1 class="login-title">PIXEL CONQUEST</h1>
+            <form id="auth-form" class="login-form">
+                <div id="error-container"></div>
+                
+                <div class="input-group">
+                    <label for="email">E-Mail</label>
+                    <input type="email" id="email" required autocomplete="email">
+                </div>
+                
+                <div class="input-group">
+                    <label for="password">Passwort</label>
+                    <input type="password" id="password" required autocomplete="current-password">
+                </div>
+                
+                <button type="submit" class="login-btn" id="submit-btn">
+                    <span id="submit-text">Anmelden</span>
+                </button>
+            </form>
+            
+            <div class="login-toggle">
+                <span id="toggle-text">Noch kein Account?</span>
+                <a id="toggle-link">Registrieren</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Game Container -->
+    <div id="game-container" style="display: none;">
         <div id="header">
             <div id="title">PIXEL CONQUEST</div>
             <div id="stats">
@@ -496,6 +678,10 @@
                     <span class="stat-label">Produktion/s</span>
                     <span class="stat-value" id="production-rate">0</span>
                 </div>
+            </div>
+            <div class="user-info">
+                <span class="user-name" id="user-display-name">Spieler</span>
+                <button class="logout-btn" id="logout-btn">Logout</button>
             </div>
         </div>
         
@@ -556,9 +742,30 @@
         </div>
     </div>
     
-    <script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getDatabase, ref, set, get, update, onValue, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCXNvSbBsRVgyKJUmckxpm_WHhC6xflSTg",
+            authDomain: "r-world-3879d.firebaseapp.com",
+            projectId: "r-world-3879d",
+            storageBucket: "r-world-3879d.firebasestorage.app",
+            messagingSenderId: "878075356607",
+            appId: "1:878075356607:web:c2177f3904858d50626d0a",
+            measurementId: "G-H9S9VXMRKB"
+        };
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+        
         // Spiel-Konfiguration
-        const WORLD_SIZE = 360; // Größere Weltkarte für bessere Darstellung
+        const WORLD_SIZE = 360;
         const PIXEL_SIZE = 10;
         const INITIAL_PIXELS = 1000;
         
@@ -591,54 +798,230 @@
             isDragging: false,
             dragStartX: 0,
             dragStartY: 0,
-            selectedPixel: null
+            selectedPixel: null,
+            userId: null,
+            userColor: '#00ff88'
         };
         
         // Weltkarte (2D-Array)
         let worldMap = Array(WORLD_SIZE).fill(null).map(() => Array(WORLD_SIZE).fill(null));
         
-        // Weltkarte mit Kontinenten initialisieren
+        // Spieler-Farben
+        const playerColors = [
+            '#00ff88', '#ff3366', '#00ccff', '#ffaa00', '#ff00ff', 
+            '#00ffff', '#ff9900', '#9900ff', '#00ff00', '#ff0066'
+        ];
+        
+        function getUserColor(userId) {
+            const hash = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            return playerColors[hash % playerColors.length];
+        }
+        
+        // Auth UI Elements
+        const loginScreen = document.getElementById('login-screen');
+        const authForm = document.getElementById('auth-form');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const submitBtn = document.getElementById('submit-btn');
+        const submitText = document.getElementById('submit-text');
+        const toggleText = document.getElementById('toggle-text');
+        const toggleLink = document.getElementById('toggle-link');
+        const errorContainer = document.getElementById('error-container');
+        const gameContainer = document.getElementById('game-container');
+        const userDisplayName = document.getElementById('user-display-name');
+        const logoutBtn = document.getElementById('logout-btn');
+        
+        let isLoginMode = true;
+        
+        // Toggle zwischen Login und Registration
+        toggleLink.addEventListener('click', () => {
+            isLoginMode = !isLoginMode;
+            if (isLoginMode) {
+                submitText.textContent = 'Anmelden';
+                toggleText.textContent = 'Noch kein Account?';
+                toggleLink.textContent = 'Registrieren';
+            } else {
+                submitText.textContent = 'Registrieren';
+                toggleText.textContent = 'Bereits registriert?';
+                toggleLink.textContent = 'Anmelden';
+            }
+            errorContainer.innerHTML = '';
+        });
+        
+        // Auth Form Submit
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            
+            submitBtn.disabled = true;
+            submitText.innerHTML = '<div class="loading-spinner"></div>';
+            errorContainer.innerHTML = '';
+            
+            try {
+                if (isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    // Initialisiere Spieler in der Datenbank
+                    await set(ref(database, `players/${userCredential.user.uid}`), {
+                        email: email,
+                        pixels: INITIAL_PIXELS,
+                        territory: 0,
+                        productionRate: 0,
+                        createdAt: serverTimestamp(),
+                        lastActive: serverTimestamp()
+                    });
+                }
+            } catch (error) {
+                let errorMessage = 'Ein Fehler ist aufgetreten';
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = 'Diese E-Mail wird bereits verwendet';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = 'Das Passwort muss mindestens 6 Zeichen lang sein';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Ungültige E-Mail-Adresse';
+                } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMessage = 'Falsche E-Mail oder Passwort';
+                }
+                
+                errorContainer.innerHTML = `<div class="error-message">${errorMessage}</div>`;
+                submitBtn.disabled = false;
+                submitText.textContent = isLoginMode ? 'Anmelden' : 'Registrieren';
+            }
+        });
+        
+        // Logout
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error('Logout Fehler:', error);
+            }
+        });
+        
+        // Auth State Observer
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                gameState.userId = user.uid;
+                gameState.userColor = getUserColor(user.uid);
+                
+                // Lade Spielerdaten
+                const playerRef = ref(database, `players/${user.uid}`);
+                const snapshot = await get(playerRef);
+                
+                if (snapshot.exists()) {
+                    const playerData = snapshot.val();
+                    gameState.pixels = playerData.pixels || INITIAL_PIXELS;
+                    gameState.territory = playerData.territory || 0;
+                    gameState.productionRate = playerData.productionRate || 0;
+                }
+                
+                // Update last active
+                await update(playerRef, {
+                    lastActive: serverTimestamp()
+                });
+                
+                // Zeige Spiel
+                loginScreen.classList.add('hidden');
+                gameContainer.style.display = 'flex';
+                userDisplayName.textContent = user.email.split('@')[0];
+                
+                // Initialisiere Spiel
+                initGame();
+                
+                // Sync mit Firebase
+                syncWithFirebase();
+            } else {
+                // Zeige Login
+                loginScreen.classList.remove('hidden');
+                gameContainer.style.display = 'none';
+                submitBtn.disabled = false;
+                submitText.textContent = 'Anmelden';
+            }
+        });
+        
+        // Firebase Sync
+        function syncWithFirebase() {
+            // Höre auf Weltkarten-Änderungen
+            const worldRef = ref(database, 'world');
+            onValue(worldRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const worldData = snapshot.val();
+                    // Lade Weltkarte
+                    for (let y = 0; y < WORLD_SIZE; y++) {
+                        for (let x = 0; x < WORLD_SIZE; x++) {
+                            const key = `${x}_${y}`;
+                            if (worldData[key]) {
+                                const tile = worldData[key];
+                                if (worldMap[y][x].type === 'land') {
+                                    worldMap[y][x] = {
+                                        ...worldMap[y][x],
+                                        owner: tile.owner,
+                                        pixelType: tile.pixelType,
+                                        level: tile.level || 1,
+                                        createdAt: tile.createdAt
+                                    };
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Berechne Territorium und Produktion neu
+                    calculatePlayerStats();
+                    render();
+                }
+            });
+        }
+        
+        // Berechne Spieler-Statistiken
+        function calculatePlayerStats() {
+            let territory = 0;
+            let productionRate = 0;
+            
+            for (let y = 0; y < WORLD_SIZE; y++) {
+                for (let x = 0; x < WORLD_SIZE; x++) {
+                    const tile = worldMap[y][x];
+                    if (tile.owner === gameState.userId) {
+                        territory++;
+                        if (tile.pixelType === 'miner') {
+                            productionRate += tile.level || 1;
+                        }
+                    }
+                }
+            }
+            
+            gameState.territory = territory;
+            gameState.productionRate = productionRate;
+            updateUI();
+        }
+        
+        // Weltkarte initialisieren
         function initWorldMap() {
-            // Realistische Darstellung der Kontinente - größer und besser sichtbar
             const continents = [
-                // Nordamerika
                 {x: 40, y: 60, width: 60, height: 70, color: '#2d5a3d', name: 'Nordamerika'},
-                // Südamerika
                 {x: 80, y: 135, width: 40, height: 70, color: '#3d6a2d', name: 'Südamerika'},
-                // Europa
                 {x: 180, y: 50, width: 40, height: 35, color: '#2d4a5a', name: 'Europa'},
-                // Afrika
                 {x: 175, y: 90, width: 50, height: 80, color: '#5a4a2d', name: 'Afrika'},
-                // Asien
                 {x: 210, y: 35, width: 90, height: 80, color: '#3d5a4a', name: 'Asien'},
-                // Australien
                 {x: 270, y: 140, width: 45, height: 35, color: '#5a3d2d', name: 'Australien'},
-                // Antarktis
                 {x: 80, y: 220, width: 200, height: 25, color: '#4a4a5a', name: 'Antarktis'},
-                // Grönland
                 {x: 90, y: 20, width: 25, height: 25, color: '#2d5a5a', name: 'Grönland'},
-                // Skandinavien
                 {x: 185, y: 30, width: 20, height: 25, color: '#2d4a6a', name: 'Skandinavien'},
-                // Indien
                 {x: 230, y: 90, width: 25, height: 30, color: '#4a5a3d', name: 'Indien'},
-                // Japan
                 {x: 300, y: 60, width: 12, height: 25, color: '#3d4a5a', name: 'Japan'},
-                // Neuseeland
                 {x: 315, y: 165, width: 10, height: 20, color: '#4a3d5a', name: 'Neuseeland'},
-                // Madagaskar
                 {x: 220, y: 140, width: 8, height: 18, color: '#5a3d4a', name: 'Madagaskar'},
-                // Island
                 {x: 155, y: 35, width: 8, height: 8, color: '#2d5a4a', name: 'Island'}
             ];
             
-            // Ozean als Hintergrund
             for (let y = 0; y < WORLD_SIZE; y++) {
                 for (let x = 0; x < WORLD_SIZE; x++) {
                     worldMap[y][x] = { type: 'ocean', owner: null };
                 }
             }
             
-            // Kontinente als Land markieren
             continents.forEach(continent => {
                 for (let y = continent.y; y < continent.y + continent.height && y < WORLD_SIZE; y++) {
                     for (let x = continent.x; x < continent.x + continent.width && x < WORLD_SIZE; x++) {
@@ -658,14 +1041,17 @@
         function resizeCanvas() {
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
-            // Zentriere die Weltkarte beim Start
             gameState.offsetX = canvas.width / 2 - (WORLD_SIZE * PIXEL_SIZE * gameState.zoom) / 2;
             gameState.offsetY = canvas.height / 2 - (WORLD_SIZE * PIXEL_SIZE * gameState.zoom) / 2;
             render();
         }
         
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+        function initGame() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            setupEventListeners();
+            startGameLoops();
+        }
         
         // UI-Elemente
         const pixelCountEl = document.getElementById('pixel-count');
@@ -674,164 +1060,78 @@
         const zoomLevelEl = document.getElementById('zoom-level');
         const notificationEl = document.getElementById('notification');
         
-        // Event-Listener für Pixel-Typen
-        document.querySelectorAll('.pixel-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.pixel-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                gameState.selectedType = btn.dataset.type;
+        // Event-Listener Setup
+        function setupEventListeners() {
+            // Pixel-Typen
+            document.querySelectorAll('.pixel-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.pixel-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    gameState.selectedType = btn.dataset.type;
+                });
             });
-        });
-        
-        // Zoom-Kontrollen
-        document.getElementById('zoom-in').addEventListener('click', () => {
-            gameState.zoom = Math.min(gameState.zoom * 1.5, 10);
-            updateZoomLevel();
-            render();
-        });
-        
-        document.getElementById('zoom-out').addEventListener('click', () => {
-            gameState.zoom = Math.max(gameState.zoom / 1.5, 0.05);
-            updateZoomLevel();
-            render();
-        });
-        
-        document.getElementById('center-view').addEventListener('click', () => {
-            gameState.offsetX = canvas.width / 2 - (WORLD_SIZE * PIXEL_SIZE * gameState.zoom) / 2;
-            gameState.offsetY = canvas.height / 2 - (WORLD_SIZE * PIXEL_SIZE * gameState.zoom) / 2;
-            render();
-            showNotification('Ansicht zentriert');
-        });
-        
-        function updateZoomLevel() {
-            zoomLevelEl.textContent = Math.round(gameState.zoom * 100) + '%';
-        }
-        
-        // Maus-Events für Dragging
-        let isClick = true;
-        let clickTimeout;
-        
-        canvas.addEventListener('mousedown', (e) => {
-            if (e.button === 2 || e.button === 1 || e.button === 0) { // Alle Mausklicks
-                gameState.isDragging = true;
-                gameState.dragStartX = e.clientX - gameState.offsetX;
-                gameState.dragStartY = e.clientY - gameState.offsetY;
-                isClick = true;
-                clickTimeout = setTimeout(() => { isClick = false; }, 150);
-                e.preventDefault();
-            }
-        });
-        
-        canvas.addEventListener('mousemove', (e) => {
-            if (gameState.isDragging) {
-                gameState.offsetX = e.clientX - gameState.dragStartX;
-                gameState.offsetY = e.clientY - gameState.dragStartY;
-                isClick = false;
-                render();
-            }
-        });
-        
-        canvas.addEventListener('mouseup', (e) => {
-            if (gameState.isDragging && isClick && e.button === 0) {
-                // War ein echter Klick, keine Drag-Bewegung
-                const rect = canvas.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const clickY = e.clientY - rect.top;
-                
-                const worldX = Math.floor((clickX - gameState.offsetX) / (PIXEL_SIZE * gameState.zoom));
-                const worldY = Math.floor((clickY - gameState.offsetY) / (PIXEL_SIZE * gameState.zoom));
-                
-                if (worldX >= 0 && worldX < WORLD_SIZE && worldY >= 0 && worldY < WORLD_SIZE) {
-                    placePixel(worldX, worldY);
-                }
-            }
-            gameState.isDragging = false;
-            clearTimeout(clickTimeout);
-        });
-        
-        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-        
-        // Touch-Events für Mobile
-        let touchStartDistance = 0;
-        let initialZoom = 1;
-        let lastTouchX = 0;
-        let lastTouchY = 0;
-        let isTouchClick = true;
-        let touchStartTime = 0;
-        
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
             
-            touchStartTime = Date.now();
-            isTouchClick = true;
-            
-            if (e.touches.length === 1) {
-                // Single touch - für Dragging
-                const touch = e.touches[0];
-                gameState.isDragging = true;
-                gameState.dragStartX = touch.clientX - gameState.offsetX;
-                gameState.dragStartY = touch.clientY - gameState.offsetY;
-                lastTouchX = touch.clientX;
-                lastTouchY = touch.clientY;
-            } else if (e.touches.length === 2) {
-                // Two finger touch - für Pinch-Zoom
-                gameState.isDragging = false;
-                isTouchClick = false;
-                const touch1 = e.touches[0];
-                const touch2 = e.touches[1];
-                touchStartDistance = Math.hypot(
-                    touch2.clientX - touch1.clientX,
-                    touch2.clientY - touch1.clientY
-                );
-                initialZoom = gameState.zoom;
-            }
-        });
-        
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            
-            if (e.touches.length === 1 && gameState.isDragging) {
-                // Single finger drag
-                const touch = e.touches[0];
-                const deltaX = Math.abs(touch.clientX - lastTouchX);
-                const deltaY = Math.abs(touch.clientY - lastTouchY);
-                
-                if (deltaX > 5 || deltaY > 5) {
-                    isTouchClick = false;
-                }
-                
-                gameState.offsetX = touch.clientX - gameState.dragStartX;
-                gameState.offsetY = touch.clientY - gameState.dragStartY;
-                render();
-            } else if (e.touches.length === 2) {
-                // Pinch to zoom
-                const touch1 = e.touches[0];
-                const touch2 = e.touches[1];
-                const currentDistance = Math.hypot(
-                    touch2.clientX - touch1.clientX,
-                    touch2.clientY - touch1.clientY
-                );
-                
-                const scale = currentDistance / touchStartDistance;
-                gameState.zoom = Math.max(0.05, Math.min(10, initialZoom * scale));
+            // Zoom-Kontrollen
+            document.getElementById('zoom-in').addEventListener('click', () => {
+                gameState.zoom = Math.min(gameState.zoom * 1.5, 10);
                 updateZoomLevel();
                 render();
-            }
-        });
+            });
+            
+            document.getElementById('zoom-out').addEventListener('click', () => {
+                gameState.zoom = Math.max(gameState.zoom / 1.5, 0.05);
+                updateZoomLevel();
+                render();
+            });
+            
+            document.getElementById('center-view').addEventListener('click', () => {
+                gameState.offsetX = canvas.width / 2 - (WORLD_SIZE * PIXEL_SIZE * gameState.zoom) / 2;
+                gameState.offsetY = canvas.height / 2 - (WORLD_SIZE * PIXEL_SIZE * gameState.zoom) / 2;
+                render();
+                showNotification('Ansicht zentriert');
+            });
+            
+            // Canvas Events
+            setupCanvasEvents();
+            
+            // Upgrade Panel
+            document.getElementById('do-upgrade-btn').addEventListener('click', doUpgrade);
+            document.getElementById('close-panel-btn').addEventListener('click', () => {
+                document.getElementById('upgrade-panel').classList.remove('show');
+                gameState.selectedPixel = null;
+            });
+        }
         
-        canvas.addEventListener('touchend', (e) => {
-            e.preventDefault();
+        // Canvas Events
+        function setupCanvasEvents() {
+            let isClick = true;
+            let clickTimeout;
             
-            const touchDuration = Date.now() - touchStartTime;
+            canvas.addEventListener('mousedown', (e) => {
+                if (e.button === 2 || e.button === 1 || e.button === 0) {
+                    gameState.isDragging = true;
+                    gameState.dragStartX = e.clientX - gameState.offsetX;
+                    gameState.dragStartY = e.clientY - gameState.offsetY;
+                    isClick = true;
+                    clickTimeout = setTimeout(() => { isClick = false; }, 150);
+                    e.preventDefault();
+                }
+            });
             
-            if (e.touches.length === 0) {
-                // Alle Finger wurden entfernt
-                if (gameState.isDragging && isTouchClick && touchDuration < 300) {
-                    // War ein kurzer Tap
-                    const touch = e.changedTouches[0];
+            canvas.addEventListener('mousemove', (e) => {
+                if (gameState.isDragging) {
+                    gameState.offsetX = e.clientX - gameState.dragStartX;
+                    gameState.offsetY = e.clientY - gameState.dragStartY;
+                    isClick = false;
+                    render();
+                }
+            });
+            
+            canvas.addEventListener('mouseup', (e) => {
+                if (gameState.isDragging && isClick && e.button === 0) {
                     const rect = canvas.getBoundingClientRect();
-                    const clickX = touch.clientX - rect.left;
-                    const clickY = touch.clientY - rect.top;
+                    const clickX = e.clientX - rect.left;
+                    const clickY = e.clientY - rect.top;
                     
                     const worldX = Math.floor((clickX - gameState.offsetX) / (PIXEL_SIZE * gameState.zoom));
                     const worldY = Math.floor((clickY - gameState.offsetY) / (PIXEL_SIZE * gameState.zoom));
@@ -841,33 +1141,118 @@
                     }
                 }
                 gameState.isDragging = false;
-            }
-        });
-        
-        canvas.addEventListener('touchcancel', (e) => {
-            e.preventDefault();
-            gameState.isDragging = false;
-        });
-        
-        // Wheel-Event für Zoom
-        canvas.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            gameState.zoom = Math.max(0.05, Math.min(10, gameState.zoom * delta));
-            updateZoomLevel();
-            render();
-        });
+                clearTimeout(clickTimeout);
+            });
+            
+            canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+            
+            // Touch Events
+            let touchStartDistance = 0;
+            let initialZoom = 1;
+            let lastTouchX = 0;
+            let lastTouchY = 0;
+            let isTouchClick = true;
+            let touchStartTime = 0;
+            
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                touchStartTime = Date.now();
+                isTouchClick = true;
+                
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    gameState.isDragging = true;
+                    gameState.dragStartX = touch.clientX - gameState.offsetX;
+                    gameState.dragStartY = touch.clientY - gameState.offsetY;
+                    lastTouchX = touch.clientX;
+                    lastTouchY = touch.clientY;
+                } else if (e.touches.length === 2) {
+                    gameState.isDragging = false;
+                    isTouchClick = false;
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    touchStartDistance = Math.hypot(
+                        touch2.clientX - touch1.clientX,
+                        touch2.clientY - touch1.clientY
+                    );
+                    initialZoom = gameState.zoom;
+                }
+            });
+            
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                
+                if (e.touches.length === 1 && gameState.isDragging) {
+                    const touch = e.touches[0];
+                    const deltaX = Math.abs(touch.clientX - lastTouchX);
+                    const deltaY = Math.abs(touch.clientY - lastTouchY);
+                    
+                    if (deltaX > 5 || deltaY > 5) {
+                        isTouchClick = false;
+                    }
+                    
+                    gameState.offsetX = touch.clientX - gameState.dragStartX;
+                    gameState.offsetY = touch.clientY - gameState.dragStartY;
+                    render();
+                } else if (e.touches.length === 2) {
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    const currentDistance = Math.hypot(
+                        touch2.clientX - touch1.clientX,
+                        touch2.clientY - touch1.clientY
+                    );
+                    
+                    const scale = currentDistance / touchStartDistance;
+                    gameState.zoom = Math.max(0.05, Math.min(10, initialZoom * scale));
+                    updateZoomLevel();
+                    render();
+                }
+            });
+            
+            canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                const touchDuration = Date.now() - touchStartTime;
+                
+                if (e.touches.length === 0) {
+                    if (gameState.isDragging && isTouchClick && touchDuration < 300) {
+                        const touch = e.changedTouches[0];
+                        const rect = canvas.getBoundingClientRect();
+                        const clickX = touch.clientX - rect.left;
+                        const clickY = touch.clientY - rect.top;
+                        
+                        const worldX = Math.floor((clickX - gameState.offsetX) / (PIXEL_SIZE * gameState.zoom));
+                        const worldY = Math.floor((clickY - gameState.offsetY) / (PIXEL_SIZE * gameState.zoom));
+                        
+                        if (worldX >= 0 && worldX < WORLD_SIZE && worldY >= 0 && worldY < WORLD_SIZE) {
+                            placePixel(worldX, worldY);
+                        }
+                    }
+                    gameState.isDragging = false;
+                }
+            });
+            
+            canvas.addEventListener('touchcancel', (e) => {
+                e.preventDefault();
+                gameState.isDragging = false;
+            });
+            
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                gameState.zoom = Math.max(0.05, Math.min(10, gameState.zoom * delta));
+                updateZoomLevel();
+                render();
+            });
+        }
         
         // Pixel platzieren
-        function placePixel(x, y) {
+        async function placePixel(x, y) {
             const currentTile = worldMap[y][x];
             
-            // Prüfen ob es sich um Land handelt
-            if (currentTile.type !== 'land' || currentTile.owner === 'player') {
+            if (currentTile.type !== 'land' || currentTile.owner === gameState.userId) {
                 if (currentTile.type === 'ocean') {
                     showNotification('Pixel können nur auf Land platziert werden!');
-                } else if (currentTile.owner === 'player') {
-                    // Öffne Upgrade-Panel wenn es ein Miner oder Kaserne ist
+                } else if (currentTile.owner === gameState.userId) {
                     if (currentTile.pixelType === 'miner' || currentTile.pixelType === 'barracks') {
                         openUpgradePanel(x, y);
                     } else {
@@ -885,29 +1270,25 @@
             }
             
             gameState.pixels = Math.floor(gameState.pixels - cost);
-            worldMap[y][x] = {
-                type: 'land',
-                owner: 'player',
+            
+            // Update in Firebase
+            const key = `${x}_${y}`;
+            await set(ref(database, `world/${key}`), {
+                owner: gameState.userId,
                 pixelType: gameState.selectedType,
-                createdAt: Date.now(),
                 level: 1,
-                landColor: currentTile.landColor,
-                landName: currentTile.landName
-            };
+                createdAt: serverTimestamp()
+            });
             
-            gameState.territory++;
-            
-            if (gameState.selectedType === 'miner') {
-                gameState.productionRate++;
-            }
-            
-            updateUI();
-            render();
+            // Update Spielerdaten
+            await update(ref(database, `players/${gameState.userId}`), {
+                pixels: gameState.pixels
+            });
             
             showNotification(`${gameState.selectedType.toUpperCase()} platziert!`);
         }
         
-        // Upgrade-Panel öffnen
+        // Upgrade Panel öffnen
         function openUpgradePanel(x, y) {
             const pixel = worldMap[y][x];
             gameState.selectedPixel = {x, y};
@@ -942,7 +1323,7 @@
         }
         
         // Upgrade durchführen
-        document.getElementById('do-upgrade-btn').addEventListener('click', () => {
+        async function doUpgrade() {
             if (!gameState.selectedPixel) return;
             
             const {x, y} = gameState.selectedPixel;
@@ -962,26 +1343,19 @@
             
             gameState.pixels = Math.floor(gameState.pixels - cost);
             
-            // Bei Miner: Produktionsrate erhöhen
-            if (pixel.pixelType === 'miner') {
-                gameState.productionRate++; // Jedes Level gibt +1 Produktion
-            }
+            // Update in Firebase
+            const key = `${x}_${y}`;
+            await update(ref(database, `world/${key}`), {
+                level: pixel.level + 1
+            });
             
-            pixel.level++;
+            // Update Spielerdaten
+            await update(ref(database, `players/${gameState.userId}`), {
+                pixels: gameState.pixels
+            });
             
-            updateUI();
-            render();
-            showNotification(`Upgrade auf Level ${pixel.level} erfolgreich!`);
-            
-            // Panel aktualisieren
-            openUpgradePanel(x, y);
-        });
-        
-        // Panel schließen
-        document.getElementById('close-panel-btn').addEventListener('click', () => {
-            document.getElementById('upgrade-panel').classList.remove('show');
-            gameState.selectedPixel = null;
-        });
+            showNotification(`Upgrade auf Level ${pixel.level + 1} erfolgreich!`);
+        }
         
         // Render-Funktion
         function render() {
@@ -990,14 +1364,9 @@
             
             const scaledPixelSize = PIXEL_SIZE * gameState.zoom;
             
-            // Bei sehr kleinem Zoom: Kontinente als Blöcke zeichnen für bessere Sichtbarkeit
             if (gameState.zoom < 0.3) {
-                // Ozean-Hintergrund
                 ctx.fillStyle = '#0f1f3f';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // Kontinente als zusammenhängende Flächen
-                let continentGroups = new Map();
                 
                 for (let y = 0; y < WORLD_SIZE; y++) {
                     for (let x = 0; x < WORLD_SIZE; x++) {
@@ -1006,8 +1375,8 @@
                             const screenX = gameState.offsetX + x * scaledPixelSize;
                             const screenY = gameState.offsetY + y * scaledPixelSize;
                             
-                            if (tile.owner === 'player') {
-                                ctx.fillStyle = PIXEL_COLORS[tile.pixelType];
+                            if (tile.owner) {
+                                ctx.fillStyle = getUserColor(tile.owner);
                             } else {
                                 ctx.fillStyle = tile.landColor || '#2a4a2a';
                             }
@@ -1016,7 +1385,6 @@
                     }
                 }
             } else {
-                // Normale Detail-Darstellung
                 for (let y = 0; y < WORLD_SIZE; y++) {
                     for (let x = 0; x < WORLD_SIZE; x++) {
                         const screenX = gameState.offsetX + x * scaledPixelSize;
@@ -1024,23 +1392,17 @@
                         
                         const tile = worldMap[y][x];
                         
-                        // Ozean zeichnen
                         if (tile.type === 'ocean') {
                             ctx.fillStyle = '#0f1f3f';
                             ctx.fillRect(screenX, screenY, scaledPixelSize, scaledPixelSize);
-                        }
-                        // Land zeichnen
-                        else if (tile.type === 'land') {
-                            // Landfarbe
-                            if (tile.owner !== 'player') {
+                        } else if (tile.type === 'land') {
+                            if (!tile.owner) {
                                 ctx.fillStyle = tile.landColor || '#2a3a2a';
                                 ctx.fillRect(screenX, screenY, scaledPixelSize, scaledPixelSize);
                             } else {
-                                // Spieler-Pixel
-                                ctx.fillStyle = PIXEL_COLORS[tile.pixelType];
+                                ctx.fillStyle = getUserColor(tile.owner);
                                 ctx.fillRect(screenX + 1, screenY + 1, scaledPixelSize - 2, scaledPixelSize - 2);
                                 
-                                // Level-Indikator für Miner und Kasernen
                                 if ((tile.pixelType === 'miner' || tile.pixelType === 'barracks') && gameState.zoom > 1.5) {
                                     ctx.fillStyle = '#ffffff';
                                     ctx.font = `bold ${Math.max(8, scaledPixelSize * 0.4)}px Orbitron`;
@@ -1049,18 +1411,15 @@
                                     ctx.fillText(tile.level, screenX + scaledPixelSize / 2, screenY + scaledPixelSize / 2);
                                 }
                                 
-                                // Glow-Effekt für Miner
                                 if (tile.pixelType === 'miner' && gameState.zoom > 1) {
                                     ctx.shadowBlur = 10 * gameState.zoom;
-                                    ctx.shadowColor = PIXEL_COLORS[tile.pixelType];
+                                    ctx.shadowColor = getUserColor(tile.owner);
                                     ctx.fillRect(screenX + 1, screenY + 1, scaledPixelSize - 2, scaledPixelSize - 2);
                                     ctx.shadowBlur = 0;
                                 }
                             }
                             
-                            // Konturen für Kontinente bei mittlerem Zoom
                             if (gameState.zoom >= 0.3 && gameState.zoom < 1) {
-                                // Prüfe ob Nachbar Ozean ist
                                 const neighbors = [
                                     [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]
                                 ];
@@ -1083,7 +1442,6 @@
                             }
                         }
                         
-                        // Grid nur zeichnen wenn Zoom > 1
                         if (gameState.zoom > 1) {
                             ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
                             ctx.lineWidth = 1;
@@ -1101,6 +1459,10 @@
             productionRateEl.textContent = gameState.productionRate.toFixed(1);
         }
         
+        function updateZoomLevel() {
+            zoomLevelEl.textContent = Math.round(gameState.zoom * 100) + '%';
+        }
+        
         // Notification anzeigen
         function showNotification(message, duration = 3000) {
             notificationEl.textContent = message;
@@ -1111,15 +1473,16 @@
         }
         
         // Kasernen-Expansion
-        function expandBarracks() {
+        async function expandBarracks() {
+            const updates = {};
+            let hasUpdates = false;
+            
             for (let y = 0; y < WORLD_SIZE; y++) {
                 for (let x = 0; x < WORLD_SIZE; x++) {
                     const tile = worldMap[y][x];
-                    if (tile.owner === 'player' && tile.pixelType === 'barracks') {
-                        // Expansionschance basierend auf Level
+                    if (tile.owner === gameState.userId && tile.pixelType === 'barracks') {
                         const expansionChance = (10 + tile.level * 5) / 100;
                         
-                        // Versuche benachbarte Felder zu erobern
                         const neighbors = [
                             [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]
                         ];
@@ -1127,54 +1490,60 @@
                         for (let [nx, ny] of neighbors) {
                             if (nx >= 0 && nx < WORLD_SIZE && ny >= 0 && ny < WORLD_SIZE) {
                                 const neighborTile = worldMap[ny][nx];
-                                if (neighborTile.type === 'land' && neighborTile.owner !== 'player' && Math.random() < expansionChance) {
-                                    worldMap[ny][nx] = {
-                                        type: 'land',
-                                        owner: 'player',
+                                if (neighborTile.type === 'land' && !neighborTile.owner && Math.random() < expansionChance) {
+                                    const key = `${nx}_${ny}`;
+                                    updates[`world/${key}`] = {
+                                        owner: gameState.userId,
                                         pixelType: 'normal',
-                                        createdAt: Date.now(),
                                         level: 1,
-                                        landColor: neighborTile.landColor
+                                        createdAt: serverTimestamp()
                                     };
-                                    gameState.territory++;
+                                    hasUpdates = true;
                                 }
                             }
                         }
                     }
                 }
             }
+            
+            if (hasUpdates) {
+                for (let [path, value] of Object.entries(updates)) {
+                    await set(ref(database, path), value);
+                }
+            }
         }
         
-        // Produktions-Loop
-        let lastProductionTime = Date.now();
-        setInterval(() => {
-            const now = Date.now();
-            const deltaTime = (now - lastProductionTime) / 1000;
+        // Game Loops
+        function startGameLoops() {
+            // Produktions-Loop
+            let lastProductionTime = Date.now();
+            setInterval(async () => {
+                const now = Date.now();
+                const deltaTime = (now - lastProductionTime) / 1000;
+                
+                gameState.pixels += gameState.productionRate * deltaTime;
+                gameState.pixels = Math.floor(gameState.pixels);
+                lastProductionTime = now;
+                
+                // Update in Firebase alle 10 Sekunden
+                if (Math.random() < 0.1) {
+                    await update(ref(database, `players/${gameState.userId}`), {
+                        pixels: gameState.pixels,
+                        lastActive: serverTimestamp()
+                    });
+                }
+                
+                updateUI();
+            }, 1000);
             
-            gameState.pixels += gameState.productionRate * deltaTime;
-            gameState.pixels = Math.floor(gameState.pixels); // Ganzzahl
-            lastProductionTime = now;
+            // Kasernen-Expansion-Loop
+            setInterval(() => {
+                expandBarracks();
+            }, 5000);
             
-            updateUI();
-        }, 1000);
-        
-        // Kasernen-Expansion-Loop
-        setInterval(() => {
-            expandBarracks();
+            // Initiales Rendering
             render();
             updateUI();
-        }, 2000);
-        
-        // Initiales Rendering
-        render();
-        updateUI();
-        
-        // Zeige Willkommensnachricht mit Steuerungshinweisen
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        if (isMobile) {
-            showNotification('Willkommen! 👆 Tippen = Platzieren | 🖐️ Ziehen = Bewegen | 🤏 Pinch = Zoom', 5000);
-        } else {
-            showNotification('Willkommen bei PIXEL CONQUEST! Klick = Platzieren | Ziehen = Bewegen', 4000);
         }
     </script>
 </body>
