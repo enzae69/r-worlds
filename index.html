@@ -277,6 +277,102 @@
             opacity: 1;
             transform: translateX(0);
         }
+        
+        #upgrade-panel {
+            position: fixed;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, var(--bg-medium) 0%, var(--bg-light) 100%);
+            border: 2px solid var(--accent-primary);
+            border-radius: 12px;
+            padding: 20px;
+            width: 280px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 1500;
+        }
+        
+        #upgrade-panel.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .upgrade-header {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 15px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        
+        .upgrade-info {
+            background: var(--bg-dark);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .upgrade-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .upgrade-info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .upgrade-label {
+            color: var(--text-secondary);
+        }
+        
+        .upgrade-value {
+            color: var(--accent-primary);
+            font-weight: 700;
+        }
+        
+        .upgrade-btn-container {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .upgrade-action-btn {
+            flex: 1;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            color: var(--bg-dark);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+        
+        .upgrade-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--border-glow);
+        }
+        
+        .upgrade-action-btn:disabled {
+            background: var(--bg-light);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .close-panel-btn {
+            background: var(--accent-danger);
+        }
     </style>
 </head>
 <body>
@@ -321,17 +417,44 @@
             
             <div id="zoom-controls">
                 <button class="zoom-btn" id="zoom-out">−</button>
-                <div id="zoom-level">100%</div>
+                <div id="zoom-level">50%</div>
                 <button class="zoom-btn" id="zoom-in">+</button>
+                <button class="zoom-btn" id="center-view" style="width: auto; padding: 0 20px; border-radius: 8px; margin-left: 10px;">🎯</button>
             </div>
         </div>
     </div>
     
     <div id="notification"></div>
     
+    <div id="upgrade-panel">
+        <div class="upgrade-header">Upgrade</div>
+        <div class="upgrade-info">
+            <div class="upgrade-info-row">
+                <span class="upgrade-label">Typ:</span>
+                <span class="upgrade-value" id="upgrade-type">-</span>
+            </div>
+            <div class="upgrade-info-row">
+                <span class="upgrade-label">Level:</span>
+                <span class="upgrade-value" id="upgrade-level">-</span>
+            </div>
+            <div class="upgrade-info-row">
+                <span class="upgrade-label">Produktion:</span>
+                <span class="upgrade-value" id="upgrade-production">-</span>
+            </div>
+            <div class="upgrade-info-row">
+                <span class="upgrade-label">Nächstes Level:</span>
+                <span class="upgrade-value" id="upgrade-cost">-</span>
+            </div>
+        </div>
+        <div class="upgrade-btn-container">
+            <button class="upgrade-action-btn" id="do-upgrade-btn">Upgrade</button>
+            <button class="upgrade-action-btn close-panel-btn" id="close-panel-btn">Schließen</button>
+        </div>
+    </div>
+    
     <script>
         // Spiel-Konfiguration
-        const WORLD_SIZE = 200; // 200x200 Weltkarte
+        const WORLD_SIZE = 360; // Größere Weltkarte für bessere Darstellung
         const PIXEL_SIZE = 10;
         const INITIAL_PIXELS = 1000;
         
@@ -339,6 +462,11 @@
             normal: 1,
             miner: 50,
             barracks: 100
+        };
+        
+        const UPGRADE_COSTS = {
+            miner: [100, 200, 400, 800, 1600],
+            barracks: [150, 300, 600, 1200, 2400]
         };
         
         const PIXEL_COLORS = {
@@ -353,16 +481,70 @@
             territory: 0,
             productionRate: 0,
             selectedType: 'normal',
-            zoom: 1,
+            zoom: 0.5,
             offsetX: 0,
             offsetY: 0,
             isDragging: false,
             dragStartX: 0,
-            dragStartY: 0
+            dragStartY: 0,
+            selectedPixel: null
         };
         
         // Weltkarte (2D-Array)
         let worldMap = Array(WORLD_SIZE).fill(null).map(() => Array(WORLD_SIZE).fill(null));
+        
+        // Weltkarte mit Kontinenten initialisieren
+        function initWorldMap() {
+            // Realistische Darstellung der Kontinente - größer und besser sichtbar
+            const continents = [
+                // Nordamerika
+                {x: 40, y: 60, width: 60, height: 70, color: '#2d5a3d', name: 'Nordamerika'},
+                // Südamerika
+                {x: 80, y: 135, width: 40, height: 70, color: '#3d6a2d', name: 'Südamerika'},
+                // Europa
+                {x: 180, y: 50, width: 40, height: 35, color: '#2d4a5a', name: 'Europa'},
+                // Afrika
+                {x: 175, y: 90, width: 50, height: 80, color: '#5a4a2d', name: 'Afrika'},
+                // Asien
+                {x: 210, y: 35, width: 90, height: 80, color: '#3d5a4a', name: 'Asien'},
+                // Australien
+                {x: 270, y: 140, width: 45, height: 35, color: '#5a3d2d', name: 'Australien'},
+                // Antarktis
+                {x: 80, y: 220, width: 200, height: 25, color: '#4a4a5a', name: 'Antarktis'},
+                // Grönland
+                {x: 90, y: 20, width: 25, height: 25, color: '#2d5a5a', name: 'Grönland'},
+                // Skandinavien
+                {x: 185, y: 30, width: 20, height: 25, color: '#2d4a6a', name: 'Skandinavien'},
+                // Indien
+                {x: 230, y: 90, width: 25, height: 30, color: '#4a5a3d', name: 'Indien'},
+                // Japan
+                {x: 300, y: 60, width: 12, height: 25, color: '#3d4a5a', name: 'Japan'},
+                // Neuseeland
+                {x: 315, y: 165, width: 10, height: 20, color: '#4a3d5a', name: 'Neuseeland'},
+                // Madagaskar
+                {x: 220, y: 140, width: 8, height: 18, color: '#5a3d4a', name: 'Madagaskar'},
+                // Island
+                {x: 155, y: 35, width: 8, height: 8, color: '#2d5a4a', name: 'Island'}
+            ];
+            
+            // Ozean als Hintergrund
+            for (let y = 0; y < WORLD_SIZE; y++) {
+                for (let x = 0; x < WORLD_SIZE; x++) {
+                    worldMap[y][x] = { type: 'ocean', owner: null };
+                }
+            }
+            
+            // Kontinente als Land markieren
+            continents.forEach(continent => {
+                for (let y = continent.y; y < continent.y + continent.height && y < WORLD_SIZE; y++) {
+                    for (let x = continent.x; x < continent.x + continent.width && x < WORLD_SIZE; x++) {
+                        worldMap[y][x] = { type: 'land', owner: null, landColor: continent.color, landName: continent.name };
+                    }
+                }
+            });
+        }
+        
+        initWorldMap();
         
         // Canvas Setup
         const canvas = document.getElementById('world-canvas');
@@ -372,6 +554,7 @@
         function resizeCanvas() {
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
+            // Zentriere die Weltkarte beim Start
             gameState.offsetX = canvas.width / 2 - (WORLD_SIZE * PIXEL_SIZE * gameState.zoom) / 2;
             gameState.offsetY = canvas.height / 2 - (WORLD_SIZE * PIXEL_SIZE * gameState.zoom) / 2;
             render();
@@ -398,15 +581,22 @@
         
         // Zoom-Kontrollen
         document.getElementById('zoom-in').addEventListener('click', () => {
-            gameState.zoom = Math.min(gameState.zoom * 1.5, 8);
+            gameState.zoom = Math.min(gameState.zoom * 1.5, 10);
             updateZoomLevel();
             render();
         });
         
         document.getElementById('zoom-out').addEventListener('click', () => {
-            gameState.zoom = Math.max(gameState.zoom / 1.5, 0.25);
+            gameState.zoom = Math.max(gameState.zoom / 1.5, 0.05);
             updateZoomLevel();
             render();
+        });
+        
+        document.getElementById('center-view').addEventListener('click', () => {
+            gameState.offsetX = canvas.width / 2 - (WORLD_SIZE * PIXEL_SIZE * gameState.zoom) / 2;
+            gameState.offsetY = canvas.height / 2 - (WORLD_SIZE * PIXEL_SIZE * gameState.zoom) / 2;
+            render();
+            showNotification('Ansicht zentriert');
         });
         
         function updateZoomLevel() {
@@ -457,13 +647,30 @@
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            gameState.zoom = Math.max(0.25, Math.min(8, gameState.zoom * delta));
+            gameState.zoom = Math.max(0.05, Math.min(10, gameState.zoom * delta));
             updateZoomLevel();
             render();
         });
         
         // Pixel platzieren
         function placePixel(x, y) {
+            const currentTile = worldMap[y][x];
+            
+            // Prüfen ob es sich um Land handelt
+            if (currentTile.type !== 'land' || currentTile.owner === 'player') {
+                if (currentTile.type === 'ocean') {
+                    showNotification('Pixel können nur auf Land platziert werden!');
+                } else if (currentTile.owner === 'player') {
+                    // Öffne Upgrade-Panel wenn es ein Miner oder Kaserne ist
+                    if (currentTile.pixelType === 'miner' || currentTile.pixelType === 'barracks') {
+                        openUpgradePanel(x, y);
+                    } else {
+                        showNotification('Feld bereits belegt!');
+                    }
+                }
+                return;
+            }
+            
             const cost = PIXEL_COSTS[gameState.selectedType];
             
             if (gameState.pixels < cost) {
@@ -471,16 +678,15 @@
                 return;
             }
             
-            if (worldMap[y][x] !== null) {
-                showNotification('Feld bereits belegt!');
-                return;
-            }
-            
-            gameState.pixels -= cost;
+            gameState.pixels = Math.floor(gameState.pixels - cost);
             worldMap[y][x] = {
-                type: gameState.selectedType,
+                type: 'land',
                 owner: 'player',
-                createdAt: Date.now()
+                pixelType: gameState.selectedType,
+                createdAt: Date.now(),
+                level: 1,
+                landColor: currentTile.landColor,
+                landName: currentTile.landName
             };
             
             gameState.territory++;
@@ -495,39 +701,187 @@
             showNotification(`${gameState.selectedType.toUpperCase()} platziert!`);
         }
         
+        // Upgrade-Panel öffnen
+        function openUpgradePanel(x, y) {
+            const pixel = worldMap[y][x];
+            gameState.selectedPixel = {x, y};
+            
+            const upgradePanel = document.getElementById('upgrade-panel');
+            const upgradeType = document.getElementById('upgrade-type');
+            const upgradeLevel = document.getElementById('upgrade-level');
+            const upgradeProduction = document.getElementById('upgrade-production');
+            const upgradeCost = document.getElementById('upgrade-cost');
+            const doUpgradeBtn = document.getElementById('do-upgrade-btn');
+            
+            upgradeType.textContent = pixel.pixelType.toUpperCase();
+            upgradeLevel.textContent = `Level ${pixel.level}`;
+            
+            if (pixel.pixelType === 'miner') {
+                upgradeProduction.textContent = `${pixel.level} Pixel/s`;
+            } else if (pixel.pixelType === 'barracks') {
+                upgradeProduction.textContent = `${10 + pixel.level * 5}% Expansion`;
+            }
+            
+            const nextLevel = pixel.level;
+            if (nextLevel <= 5) {
+                const cost = UPGRADE_COSTS[pixel.pixelType][nextLevel - 1];
+                upgradeCost.textContent = `${cost} Pixel`;
+                doUpgradeBtn.disabled = gameState.pixels < cost;
+            } else {
+                upgradeCost.textContent = 'MAX';
+                doUpgradeBtn.disabled = true;
+            }
+            
+            upgradePanel.classList.add('show');
+        }
+        
+        // Upgrade durchführen
+        document.getElementById('do-upgrade-btn').addEventListener('click', () => {
+            if (!gameState.selectedPixel) return;
+            
+            const {x, y} = gameState.selectedPixel;
+            const pixel = worldMap[y][x];
+            
+            if (pixel.level >= 5) {
+                showNotification('Maximales Level erreicht!');
+                return;
+            }
+            
+            const cost = UPGRADE_COSTS[pixel.pixelType][pixel.level - 1];
+            
+            if (gameState.pixels < cost) {
+                showNotification(`Nicht genug Pixel! Benötigt: ${cost}`);
+                return;
+            }
+            
+            gameState.pixels = Math.floor(gameState.pixels - cost);
+            
+            // Bei Miner: Produktionsrate erhöhen
+            if (pixel.pixelType === 'miner') {
+                gameState.productionRate++; // Jedes Level gibt +1 Produktion
+            }
+            
+            pixel.level++;
+            
+            updateUI();
+            render();
+            showNotification(`Upgrade auf Level ${pixel.level} erfolgreich!`);
+            
+            // Panel aktualisieren
+            openUpgradePanel(x, y);
+        });
+        
+        // Panel schließen
+        document.getElementById('close-panel-btn').addEventListener('click', () => {
+            document.getElementById('upgrade-panel').classList.remove('show');
+            gameState.selectedPixel = null;
+        });
+        
         // Render-Funktion
         function render() {
             ctx.fillStyle = '#0a0e17';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Grid zeichnen
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-            ctx.lineWidth = 1;
-            
             const scaledPixelSize = PIXEL_SIZE * gameState.zoom;
             
-            for (let y = 0; y < WORLD_SIZE; y++) {
-                for (let x = 0; x < WORLD_SIZE; x++) {
-                    const screenX = gameState.offsetX + x * scaledPixelSize;
-                    const screenY = gameState.offsetY + y * scaledPixelSize;
-                    
-                    // Grid nur zeichnen wenn Zoom > 0.5
-                    if (gameState.zoom > 0.5) {
-                        ctx.strokeRect(screenX, screenY, scaledPixelSize, scaledPixelSize);
+            // Bei sehr kleinem Zoom: Kontinente als Blöcke zeichnen für bessere Sichtbarkeit
+            if (gameState.zoom < 0.3) {
+                // Ozean-Hintergrund
+                ctx.fillStyle = '#0f1f3f';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Kontinente als zusammenhängende Flächen
+                let continentGroups = new Map();
+                
+                for (let y = 0; y < WORLD_SIZE; y++) {
+                    for (let x = 0; x < WORLD_SIZE; x++) {
+                        const tile = worldMap[y][x];
+                        if (tile.type === 'land') {
+                            const screenX = gameState.offsetX + x * scaledPixelSize;
+                            const screenY = gameState.offsetY + y * scaledPixelSize;
+                            
+                            if (tile.owner === 'player') {
+                                ctx.fillStyle = PIXEL_COLORS[tile.pixelType];
+                            } else {
+                                ctx.fillStyle = tile.landColor || '#2a4a2a';
+                            }
+                            ctx.fillRect(screenX, screenY, Math.max(1, scaledPixelSize), Math.max(1, scaledPixelSize));
+                        }
                     }
-                    
-                    // Pixel zeichnen
-                    if (worldMap[y][x] !== null) {
-                        const pixel = worldMap[y][x];
-                        ctx.fillStyle = PIXEL_COLORS[pixel.type];
-                        ctx.fillRect(screenX + 1, screenY + 1, scaledPixelSize - 2, scaledPixelSize - 2);
+                }
+            } else {
+                // Normale Detail-Darstellung
+                for (let y = 0; y < WORLD_SIZE; y++) {
+                    for (let x = 0; x < WORLD_SIZE; x++) {
+                        const screenX = gameState.offsetX + x * scaledPixelSize;
+                        const screenY = gameState.offsetY + y * scaledPixelSize;
                         
-                        // Glow-Effekt für Miner
-                        if (pixel.type === 'miner' && gameState.zoom > 1) {
-                            ctx.shadowBlur = 10;
-                            ctx.shadowColor = PIXEL_COLORS[pixel.type];
-                            ctx.fillRect(screenX + 1, screenY + 1, scaledPixelSize - 2, scaledPixelSize - 2);
-                            ctx.shadowBlur = 0;
+                        const tile = worldMap[y][x];
+                        
+                        // Ozean zeichnen
+                        if (tile.type === 'ocean') {
+                            ctx.fillStyle = '#0f1f3f';
+                            ctx.fillRect(screenX, screenY, scaledPixelSize, scaledPixelSize);
+                        }
+                        // Land zeichnen
+                        else if (tile.type === 'land') {
+                            // Landfarbe
+                            if (tile.owner !== 'player') {
+                                ctx.fillStyle = tile.landColor || '#2a3a2a';
+                                ctx.fillRect(screenX, screenY, scaledPixelSize, scaledPixelSize);
+                            } else {
+                                // Spieler-Pixel
+                                ctx.fillStyle = PIXEL_COLORS[tile.pixelType];
+                                ctx.fillRect(screenX + 1, screenY + 1, scaledPixelSize - 2, scaledPixelSize - 2);
+                                
+                                // Level-Indikator für Miner und Kasernen
+                                if ((tile.pixelType === 'miner' || tile.pixelType === 'barracks') && gameState.zoom > 1.5) {
+                                    ctx.fillStyle = '#ffffff';
+                                    ctx.font = `bold ${Math.max(8, scaledPixelSize * 0.4)}px Orbitron`;
+                                    ctx.textAlign = 'center';
+                                    ctx.textBaseline = 'middle';
+                                    ctx.fillText(tile.level, screenX + scaledPixelSize / 2, screenY + scaledPixelSize / 2);
+                                }
+                                
+                                // Glow-Effekt für Miner
+                                if (tile.pixelType === 'miner' && gameState.zoom > 1) {
+                                    ctx.shadowBlur = 10 * gameState.zoom;
+                                    ctx.shadowColor = PIXEL_COLORS[tile.pixelType];
+                                    ctx.fillRect(screenX + 1, screenY + 1, scaledPixelSize - 2, scaledPixelSize - 2);
+                                    ctx.shadowBlur = 0;
+                                }
+                            }
+                            
+                            // Konturen für Kontinente bei mittlerem Zoom
+                            if (gameState.zoom >= 0.3 && gameState.zoom < 1) {
+                                // Prüfe ob Nachbar Ozean ist
+                                const neighbors = [
+                                    [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]
+                                ];
+                                
+                                let hasOceanNeighbor = false;
+                                for (let [nx, ny] of neighbors) {
+                                    if (nx >= 0 && nx < WORLD_SIZE && ny >= 0 && ny < WORLD_SIZE) {
+                                        if (worldMap[ny][nx].type === 'ocean') {
+                                            hasOceanNeighbor = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                if (hasOceanNeighbor) {
+                                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                                    ctx.lineWidth = Math.max(1, gameState.zoom);
+                                    ctx.strokeRect(screenX, screenY, scaledPixelSize, scaledPixelSize);
+                                }
+                            }
+                        }
+                        
+                        // Grid nur zeichnen wenn Zoom > 1
+                        if (gameState.zoom > 1) {
+                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                            ctx.lineWidth = 1;
+                            ctx.strokeRect(screenX, screenY, scaledPixelSize, scaledPixelSize);
                         }
                     }
                 }
@@ -536,7 +890,7 @@
         
         // UI aktualisieren
         function updateUI() {
-            pixelCountEl.textContent = gameState.pixels;
+            pixelCountEl.textContent = Math.floor(gameState.pixels);
             territoryCountEl.textContent = gameState.territory;
             productionRateEl.textContent = gameState.productionRate.toFixed(1);
         }
@@ -554,7 +908,11 @@
         function expandBarracks() {
             for (let y = 0; y < WORLD_SIZE; y++) {
                 for (let x = 0; x < WORLD_SIZE; x++) {
-                    if (worldMap[y][x]?.type === 'barracks') {
+                    const tile = worldMap[y][x];
+                    if (tile.owner === 'player' && tile.pixelType === 'barracks') {
+                        // Expansionschance basierend auf Level
+                        const expansionChance = (10 + tile.level * 5) / 100;
+                        
                         // Versuche benachbarte Felder zu erobern
                         const neighbors = [
                             [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]
@@ -562,11 +920,15 @@
                         
                         for (let [nx, ny] of neighbors) {
                             if (nx >= 0 && nx < WORLD_SIZE && ny >= 0 && ny < WORLD_SIZE) {
-                                if (worldMap[ny][nx] === null && Math.random() < 0.1) { // 10% Chance pro Tick
+                                const neighborTile = worldMap[ny][nx];
+                                if (neighborTile.type === 'land' && neighborTile.owner !== 'player' && Math.random() < expansionChance) {
                                     worldMap[ny][nx] = {
-                                        type: 'normal',
+                                        type: 'land',
                                         owner: 'player',
-                                        createdAt: Date.now()
+                                        pixelType: 'normal',
+                                        createdAt: Date.now(),
+                                        level: 1,
+                                        landColor: neighborTile.landColor
                                     };
                                     gameState.territory++;
                                 }
@@ -584,6 +946,7 @@
             const deltaTime = (now - lastProductionTime) / 1000;
             
             gameState.pixels += gameState.productionRate * deltaTime;
+            gameState.pixels = Math.floor(gameState.pixels); // Ganzzahl
             lastProductionTime = now;
             
             updateUI();
