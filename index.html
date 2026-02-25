@@ -306,12 +306,18 @@ function genWorld(){
   const world=[];
   for(let y=0;y<WH;y++){ world[y]=[];
     for(let x=0;x<WW;x++){
-      const n=octave(x*.03,y*.03,4);
+      const n=octave(x*.04,y*.04,5);
+      // Island falloff: distance from center pushes towards water
+      const cx=WW/2, cy=WH/2;
+      const dist=Math.sqrt((x-cx)*(x-cx)+(y-cy)*(y-cy));
+      const maxDist=WW*0.48;
+      const falloff=Math.pow(dist/maxDist,2.2)*1.8;
+      const island=n-falloff;
       let t=TILE.GRASS;
-      if(n<-.72) t=TILE.WATER;
-      else if(n<-.55) t=TILE.SAND;
-      else if(n>.62) t=TILE.STONE;
-      else if(n>.35&&Math.abs(hash(x*3,y*3))<.4) t=TILE.DIRT;
+      if(island<-.55) t=TILE.WATER;
+      else if(island<-.35) t=TILE.SAND;
+      else if(island>.45) t=TILE.STONE;
+      else if(island>.2&&Math.abs(hash(x*3,y*3))<.4) t=TILE.DIRT;
       world[y][x]=t;
     }
   }
