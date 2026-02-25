@@ -306,12 +306,12 @@ function genWorld(){
   const world=[];
   for(let y=0;y<WH;y++){ world[y]=[];
     for(let x=0;x<WW;x++){
-      const n=octave(x*.06,y*.06,4);
+      const n=octave(x*.03,y*.03,4);
       let t=TILE.GRASS;
-      if(n<-.35) t=TILE.WATER;
-      else if(n<-.2) t=TILE.SAND;
-      else if(n>.35) t=TILE.STONE;
-      else if(n>.15&&Math.abs(hash(x*3,y*3))<.3) t=TILE.DIRT;
+      if(n<-.72) t=TILE.WATER;
+      else if(n<-.55) t=TILE.SAND;
+      else if(n>.62) t=TILE.STONE;
+      else if(n>.35&&Math.abs(hash(x*3,y*3))<.4) t=TILE.DIRT;
       world[y][x]=t;
     }
   }
