@@ -6,148 +6,101 @@
 <title>LASER TRACER</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Russo+One&family=Exo+2:wght@400;700;900&display=swap');
-
   :root {
-    --neon-cyan: #00f5ff;
-    --neon-pink: #ff006e;
-    --neon-yellow: #ffff00;
-    --neon-green: #39ff14;
-    --neon-gold: #ffd700;
-    --bg: #050510;
-    --panel: #0a0a1f;
-    --panel2: #0f0f2a;
-    --border: rgba(0,245,255,0.3);
-    --text: #e0f7ff;
+    --neon-cyan:#00f5ff; --neon-pink:#ff006e; --neon-yellow:#ffff00;
+    --neon-green:#39ff14; --neon-gold:#ffd700;
+    --bg:#050510; --panel:#0a0a1f; --panel2:#0f0f2a;
+    --border:rgba(0,245,255,0.3); --text:#e0f7ff;
   }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { overscroll-behavior:none; }
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Exo 2', sans-serif;
-    height: 100vh; height: 100dvh;
-    overflow: hidden;
-    position: fixed; inset:0;
-    width:100%;
+    background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif;
+    height:100vh; height:100dvh; overflow:hidden; position:fixed; inset:0; width:100%;
   }
   body::before {
     content:''; position:fixed; inset:0;
-    background-image:
-      linear-gradient(rgba(0,245,255,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,245,255,0.04) 1px, transparent 1px);
-    background-size: 40px 40px;
-    animation: gridMove 20s linear infinite;
-    pointer-events:none; z-index:0;
+    background-image:linear-gradient(rgba(0,245,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,0.04) 1px,transparent 1px);
+    background-size:40px 40px; animation:gridMove 20s linear infinite; pointer-events:none; z-index:0;
   }
   @keyframes gridMove { 0%{background-position:0 0} 100%{background-position:40px 40px} }
-
   #app { position:relative; z-index:1; width:100%; height:100%; }
   .screen { display:none; width:100%; height:100%; }
   .screen.active { display:flex; }
+  .scroll-screen { flex-direction:column; align-items:center; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:24px 16px 40px; }
 
-  /* scrollable screens on mobile */
-  .scroll-screen {
-    flex-direction:column; align-items:center;
-    overflow-y:auto; -webkit-overflow-scrolling:touch;
-    padding: 24px 16px 40px;
-  }
-
-  /* ===== MENU ===== */
-  #menuScreen { justify-content:flex-start; gap:18px; }
   .game-title {
-    font-family:'Russo One',sans-serif;
-    font-size:clamp(40px,11vw,90px);
+    font-family:'Russo One',sans-serif; font-size:clamp(38px,11vw,86px);
     background:linear-gradient(90deg,var(--neon-cyan),var(--neon-pink),var(--neon-yellow));
     -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
-    filter:drop-shadow(0 0 30px var(--neon-cyan));
-    letter-spacing:3px; animation:titlePulse 3s ease-in-out infinite; text-align:center;
+    filter:drop-shadow(0 0 30px var(--neon-cyan)); letter-spacing:3px;
+    animation:titlePulse 3s ease-in-out infinite; text-align:center;
   }
-  @keyframes titlePulse {
-    0%,100%{filter:drop-shadow(0 0 20px var(--neon-cyan))}
-    50%{filter:drop-shadow(0 0 50px var(--neon-pink))}
-  }
+  @keyframes titlePulse { 0%,100%{filter:drop-shadow(0 0 20px var(--neon-cyan))} 50%{filter:drop-shadow(0 0 50px var(--neon-pink))} }
   .subtitle { color:rgba(255,255,255,0.5); letter-spacing:6px; font-size:13px; text-transform:uppercase; margin-top:-12px; }
 
+  input[type=text],input[type=email],input[type=password] {
+    background:var(--panel2); border:2px solid var(--border); color:var(--neon-cyan);
+    font-family:'Exo 2',sans-serif; font-size:16px; padding:12px 18px; border-radius:8px;
+    outline:none; width:260px; text-align:center; transition:border-color 0.3s;
+  }
+  input:focus { border-color:var(--neon-cyan); box-shadow:0 0 20px rgba(0,245,255,0.3); }
+
+  .btn {
+    font-family:'Russo One',sans-serif; font-size:15px; letter-spacing:1.5px;
+    padding:14px 26px; border:none; border-radius:8px; cursor:pointer;
+    transition:transform 0.15s,box-shadow 0.2s; text-transform:uppercase;
+    position:relative; overflow:hidden; touch-action:manipulation;
+  }
+  .btn:active { transform:scale(0.96); }
+  .btn-cyan { background:linear-gradient(135deg,#007a8a,#00c4d4); color:var(--bg); box-shadow:0 0 20px rgba(0,245,255,0.4); }
+  .btn-pink { background:linear-gradient(135deg,#8a0030,#cc0055); color:white; box-shadow:0 0 20px rgba(255,0,110,0.4); }
+  .btn-gold { background:linear-gradient(135deg,#b8860b,#ffd700); color:#000; box-shadow:0 0 20px rgba(255,215,0,0.4); }
+  .btn-green { background:linear-gradient(135deg,#1a8a1a,#39ff14); color:#000; box-shadow:0 0 20px rgba(57,255,20,0.4); }
+  .btn-ghost { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.6); }
+  .btn-small { padding:9px 16px; font-size:12px; }
+  .btn-disabled { opacity:0.35; pointer-events:none; filter:grayscale(0.5); }
+  .menu-btns { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .error-msg { color:var(--neon-pink); font-size:13px; text-align:center; min-height:18px; letter-spacing:1px; }
+  .ok-msg { color:var(--neon-green); }
+  .tag-online { display:inline-flex; align-items:center; gap:6px; background:rgba(57,255,20,0.1); border:1px solid rgba(57,255,20,0.3); border-radius:20px; padding:3px 12px; font-size:11px; color:var(--neon-green); letter-spacing:2px; text-transform:uppercase; }
+  .tag-online::before { content:'●'; animation:pingPulse 1.5s infinite; font-size:8px; }
+  .tag-offline { background:rgba(255,140,0,0.1); border-color:rgba(255,140,0,0.3); color:#ff8c00; }
+  @keyframes pingPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .separator { width:60px; height:2px; background:linear-gradient(90deg,transparent,var(--neon-cyan),transparent); }
+
+  /* ===== AUTH ===== */
+  #authScreen { justify-content:flex-start; gap:16px; }
+  .auth-box { background:var(--panel); border:2px solid var(--border); border-radius:16px; padding:24px; width:min(360px,95vw); display:flex; flex-direction:column; gap:12px; align-items:center; box-shadow:0 0 40px rgba(0,245,255,0.1); }
+  .auth-tabs { display:flex; gap:8px; width:100%; }
+  .auth-tab { flex:1; padding:10px; text-align:center; border-radius:8px; cursor:pointer; font-family:'Russo One',sans-serif; font-size:13px; letter-spacing:1px; background:var(--panel2); color:rgba(255,255,255,0.4); transition:all 0.2s; }
+  .auth-tab.active { background:linear-gradient(135deg,#007a8a,#00c4d4); color:var(--bg); }
+  .auth-divider { display:flex; align-items:center; gap:10px; width:100%; color:rgba(255,255,255,0.3); font-size:11px; letter-spacing:2px; }
+  .auth-divider::before,.auth-divider::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.1); }
+
   /* Profile card */
-  .profile-card {
-    background:var(--panel); border:2px solid var(--border); border-radius:16px;
-    padding:16px 20px; width:min(440px,95vw); display:flex; align-items:center; gap:14px;
-    box-shadow:0 0 30px rgba(0,245,255,0.08);
-  }
+  .profile-card { background:var(--panel); border:2px solid var(--border); border-radius:16px; padding:16px 20px; width:min(440px,95vw); display:flex; align-items:center; gap:14px; box-shadow:0 0 30px rgba(0,245,255,0.08); }
   .profile-avatar-wrap { position:relative; flex-shrink:0; }
-  .profile-avatar {
-    width:56px; height:56px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .level-badge {
-    position:absolute; bottom:-4px; right:-4px;
-    background:var(--neon-gold); color:#000; font-weight:900;
-    font-size:11px; border-radius:10px; padding:2px 6px;
-    font-family:'Russo One',sans-serif;
-    box-shadow:0 0 10px var(--neon-gold);
-  }
+  .profile-avatar { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .level-badge { position:absolute; bottom:-4px; right:-4px; background:var(--neon-gold); color:#000; font-weight:900; font-size:11px; border-radius:10px; padding:2px 6px; font-family:'Russo One',sans-serif; box-shadow:0 0 10px var(--neon-gold); }
   .profile-info { flex:1; min-width:0; }
   .profile-name { font-weight:900; font-size:18px; color:var(--neon-cyan); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .xp-bar-bg { background:var(--panel2); height:8px; border-radius:5px; margin-top:6px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); }
   .xp-bar-fill { height:100%; background:linear-gradient(90deg,var(--neon-cyan),var(--neon-green)); border-radius:5px; transition:width 0.6s; box-shadow:0 0 8px var(--neon-green); }
   .xp-text { font-size:10px; color:rgba(255,255,255,0.4); margin-top:3px; letter-spacing:1px; }
   .coins-display { display:flex; align-items:center; gap:5px; background:var(--panel2); padding:6px 12px; border-radius:20px; border:1px solid rgba(255,215,0,0.3); }
-  .coins-display .coin-icon { font-size:16px; }
   .coins-display .coin-amount { font-family:'Russo One',sans-serif; color:var(--neon-gold); font-size:15px; }
-
-  input[type=text] {
-    background:var(--panel2); border:2px solid var(--border); color:var(--neon-cyan);
-    font-family:'Exo 2',sans-serif; font-size:17px; padding:12px 18px; border-radius:8px;
-    outline:none; width:220px; text-align:center; transition:border-color 0.3s;
-  }
-  input[type=text]:focus { border-color:var(--neon-cyan); box-shadow:0 0 20px rgba(0,245,255,0.3); }
-
-  .btn {
-    font-family:'Russo One',sans-serif; font-size:15px; letter-spacing:1.5px;
-    padding:14px 28px; border:none; border-radius:8px; cursor:pointer;
-    transition:all 0.2s; text-transform:uppercase; position:relative; overflow:hidden;
-    touch-action:manipulation;
-  }
-  .btn::before { content:''; position:absolute; inset:0; background:rgba(255,255,255,0.15); transform:translateX(-100%) skewX(-20deg); transition:transform 0.3s; }
-  .btn:hover::before { transform:translateX(100%) skewX(-20deg); }
-  .btn-cyan { background:linear-gradient(135deg,#007a8a,#00c4d4); color:var(--bg); box-shadow:0 0 20px rgba(0,245,255,0.4); }
-  .btn-cyan:active { transform:scale(0.96); }
-  .btn-pink { background:linear-gradient(135deg,#8a0030,#cc0055); color:white; box-shadow:0 0 20px rgba(255,0,110,0.4); }
-  .btn-pink:active { transform:scale(0.96); }
-  .btn-gold { background:linear-gradient(135deg,#b8860b,#ffd700); color:#000; box-shadow:0 0 20px rgba(255,215,0,0.4); }
-  .btn-gold:active { transform:scale(0.96); }
-  .btn-ghost { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.6); }
-  .btn-small { padding:9px 16px; font-size:12px; }
-
-  .menu-btns { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
-  .error-msg { color:var(--neon-pink); font-size:13px; text-align:center; min-height:18px; letter-spacing:1px; }
-  .tag-online {
-    display:inline-flex; align-items:center; gap:6px;
-    background:rgba(57,255,20,0.1); border:1px solid rgba(57,255,20,0.3);
-    border-radius:20px; padding:3px 12px; font-size:11px; color:var(--neon-green);
-    letter-spacing:2px; text-transform:uppercase;
-  }
-  .tag-online::before { content:'●'; animation:pingPulse 1.5s infinite; font-size:8px; }
-  @keyframes pingPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-  .separator { width:60px; height:2px; background:linear-gradient(90deg,transparent,var(--neon-cyan),transparent); }
+  .stats-row { display:flex; gap:16px; font-size:11px; color:rgba(255,255,255,0.5); letter-spacing:1px; }
+  .stats-row b { color:var(--neon-cyan); font-family:'Russo One',sans-serif; }
 
   .join-form { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
   input.code-input { text-transform:uppercase; letter-spacing:6px; font-family:'Russo One',sans-serif; font-size:22px; width:160px; text-align:center; }
 
-  /* ===== SKIN SHOP ===== */
-  #shopScreen .shop-header {
-    width:min(540px,95vw); display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;
-  }
+  /* SHOP */
+  #shopScreen .shop-header { width:min(540px,95vw); display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
   .shop-title { font-family:'Russo One',sans-serif; font-size:26px; color:var(--neon-cyan); letter-spacing:3px; }
-  .skins-grid {
-    display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:12px;
-    width:min(540px,95vw);
-  }
-  .skin-card {
-    background:var(--panel); border:2px solid rgba(255,255,255,0.08); border-radius:14px;
-    padding:14px 10px; display:flex; flex-direction:column; align-items:center; gap:8px;
-    cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden;
-  }
+  .skins-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:12px; width:min(540px,95vw); }
+  .skin-card { background:var(--panel); border:2px solid rgba(255,255,255,0.08); border-radius:14px; padding:14px 10px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; transition:transform 0.15s; position:relative; }
   .skin-card:active { transform:scale(0.96); }
   .skin-card.owned { border-color:rgba(57,255,20,0.3); }
   .skin-card.equipped { border-color:var(--neon-cyan); box-shadow:0 0 20px rgba(0,245,255,0.3); }
@@ -155,23 +108,14 @@
   .skin-preview { width:60px; height:60px; }
   .skin-name { font-weight:700; font-size:13px; text-align:center; }
   .skin-rarity { font-size:9px; letter-spacing:2px; text-transform:uppercase; }
-  .rarity-common { color:#aaa; }
-  .rarity-rare { color:var(--neon-cyan); }
-  .rarity-epic { color:#cc66ff; }
-  .rarity-legendary { color:var(--neon-gold); }
-  .skin-price {
-    display:flex; align-items:center; gap:4px; font-family:'Russo One',sans-serif;
-    font-size:13px; color:var(--neon-gold);
-  }
+  .rarity-common{color:#aaa} .rarity-rare{color:var(--neon-cyan)} .rarity-epic{color:#cc66ff} .rarity-legendary{color:var(--neon-gold)}
+  .skin-price { display:flex; align-items:center; gap:4px; font-family:'Russo One',sans-serif; font-size:13px; color:var(--neon-gold); }
   .skin-status { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
-  .status-equipped { color:var(--neon-cyan); }
-  .status-owned { color:var(--neon-green); }
-  .lock-overlay {
-    position:absolute; top:6px; right:6px; font-size:14px;
-  }
+  .status-equipped{color:var(--neon-cyan)} .status-owned{color:var(--neon-green)}
+  .lock-overlay { position:absolute; top:6px; right:6px; font-size:14px; }
   .level-req { font-size:9px; color:var(--neon-pink); letter-spacing:1px; }
 
-  /* ===== LOBBY ===== */
+  /* LOBBY */
   .lobby-box { background:var(--panel); border:2px solid var(--border); border-radius:16px; padding:24px; width:min(540px,95vw); box-shadow:0 0 40px rgba(0,245,255,0.1); }
   .lobby-title { font-family:'Russo One',sans-serif; font-size:22px; color:var(--neon-cyan); margin-bottom:16px; text-align:center; letter-spacing:3px; }
   .room-code-display { background:var(--panel2); border:2px dashed var(--neon-yellow); border-radius:10px; padding:12px; text-align:center; margin-bottom:14px; cursor:pointer; }
@@ -188,58 +132,63 @@
   .player-lvl { font-size:9px; color:var(--neon-green); }
   .slot-empty { color:rgba(255,255,255,0.2); font-size:12px; letter-spacing:2px; }
   .lobby-btns { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+  .lobby-hint { font-size:11px; color:rgba(255,255,255,0.4); text-align:center; margin-top:8px; letter-spacing:1px; }
 
-  /* ===== GAME ===== */
+  /* GAME */
   #gameScreen { flex-direction:column; position:relative; }
   #gameCanvas { width:100%; height:100%; display:block; touch-action:none; }
-
   #hud { position:absolute; top:10px; left:0; right:0; display:flex; justify-content:space-between; align-items:flex-start; padding:0 12px; pointer-events:none; z-index:10; }
   .hud-panel { background:rgba(5,5,16,0.85); border:1px solid var(--border); border-radius:10px; padding:6px 12px; backdrop-filter:blur(8px); }
   .hud-timer { font-family:'Russo One',sans-serif; font-size:28px; color:var(--neon-cyan); text-align:center; line-height:1; filter:drop-shadow(0 0 8px var(--neon-cyan)); }
   .hud-label { font-size:9px; color:rgba(255,255,255,0.4); text-align:center; letter-spacing:2px; text-transform:uppercase; }
   .alive-count { font-family:'Russo One',sans-serif; font-size:18px; color:var(--neon-green); }
-
-  /* JOYSTICK */
   #joystick { position:absolute; bottom:24px; left:24px; width:120px; height:120px; z-index:25; touch-action:none; display:none; }
   #joystick.show { display:block; }
   .joy-base { position:absolute; inset:0; border-radius:50%; background:rgba(5,5,16,0.5); border:2px solid rgba(0,245,255,0.3); backdrop-filter:blur(4px); }
-  .joy-stick { position:absolute; width:52px; height:52px; left:34px; top:34px; border-radius:50%; background:radial-gradient(circle at 40% 35%, #fff, var(--neon-cyan)); box-shadow:0 0 20px var(--neon-cyan); transition:transform 0.05s; }
-
-  /* EMOTE BAR */
+  .joy-stick { position:absolute; width:52px; height:52px; left:34px; top:34px; border-radius:50%; background:radial-gradient(circle at 40% 35%,#fff,var(--neon-cyan)); box-shadow:0 0 20px var(--neon-cyan); }
   #emoteBar { position:absolute; bottom:24px; right:24px; display:flex; gap:8px; z-index:25; flex-wrap:wrap; justify-content:flex-end; max-width:200px; }
-  .emote-btn { width:52px; height:52px; background:rgba(5,5,16,0.9); border:2px solid rgba(255,255,255,0.15); border-radius:12px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:20px; color:white; transition:all 0.15s; user-select:none; backdrop-filter:blur(8px); pointer-events:all; }
+  .emote-btn { width:52px; height:52px; background:rgba(5,5,16,0.9); border:2px solid rgba(255,255,255,0.15); border-radius:12px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:20px; color:white; transition:transform 0.1s; user-select:none; backdrop-filter:blur(8px); pointer-events:all; }
   .emote-btn span.key { font-size:8px; color:rgba(255,255,255,0.35); letter-spacing:1px; font-family:'Exo 2',sans-serif; }
   .emote-btn:active { transform:scale(0.88); border-color:var(--neon-cyan); }
-
-  #resultOverlay { position:absolute; inset:0; background:rgba(5,5,16,0.9); display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; z-index:50; backdrop-filter:blur(10px); padding:20px; overflow-y:auto; }
+  #resultOverlay { position:absolute; inset:0; background:rgba(5,5,16,0.92); display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; z-index:50; backdrop-filter:blur(10px); padding:20px; overflow-y:auto; }
   #resultOverlay.show { display:flex; }
-  .result-title { font-family:'Russo One',sans-serif; font-size:clamp(30px,8vw,64px); letter-spacing:3px; text-align:center; }
+  .result-title { font-family:'Russo One',sans-serif; font-size:clamp(28px,8vw,60px); letter-spacing:3px; text-align:center; }
   .result-title.win { background:linear-gradient(90deg,var(--neon-green),var(--neon-cyan)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 0 30px var(--neon-green)); }
   .result-title.lose { background:linear-gradient(90deg,var(--neon-pink),#ff6600); -webkit-background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 0 30px var(--neon-pink)); }
   .result-stats { color:rgba(255,255,255,0.6); font-size:15px; letter-spacing:1px; text-align:center; }
   .reward-box { background:var(--panel); border:2px solid var(--neon-gold); border-radius:14px; padding:16px 24px; display:flex; gap:24px; }
   .reward-item { text-align:center; }
   .reward-val { font-family:'Russo One',sans-serif; font-size:24px; }
-  .reward-val.xp { color:var(--neon-cyan); }
-  .reward-val.coin { color:var(--neon-gold); }
+  .reward-val.xp{color:var(--neon-cyan)} .reward-val.coin{color:var(--neon-gold)}
   .reward-lbl { font-size:10px; color:rgba(255,255,255,0.4); letter-spacing:2px; text-transform:uppercase; }
   .levelup-banner { background:linear-gradient(90deg,var(--neon-gold),var(--neon-yellow)); color:#000; font-family:'Russo One',sans-serif; padding:8px 20px; border-radius:20px; letter-spacing:2px; animation:levelPop 0.6s; box-shadow:0 0 30px var(--neon-gold); }
   @keyframes levelPop { 0%{transform:scale(0)} 60%{transform:scale(1.2)} 100%{transform:scale(1)} }
-
   #countdownOverlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:40; }
   #countdownOverlay.show { display:flex; }
   .countdown-num { font-family:'Russo One',sans-serif; font-size:clamp(120px,30vw,200px); color:var(--neon-cyan); filter:drop-shadow(0 0 60px var(--neon-cyan)); animation:countPop 0.6s ease-out; }
-  @keyframes countPop { 0%{transform:scale(1.5);opacity:0} 50%{transform:scale(0.95);opacity:1} 100%{transform:scale(1);opacity:1} }
-
-  #chatBox { position:absolute; top:70px; right:12px; width:180px; z-index:20; pointer-events:none; }
+  @keyframes countPop { 0%{transform:scale(1.5);opacity:0} 50%{transform:scale(0.95);opacity:1} 100%{transform:scale(1)} }
+  #chatBox { position:absolute; top:70px; right:12px; width:170px; z-index:20; pointer-events:none; }
   .chat-msg { background:rgba(5,5,16,0.8); border:1px solid var(--border); border-radius:8px; padding:4px 9px; font-size:11px; margin-bottom:4px; animation:fadeMsg 5s forwards; }
   @keyframes fadeMsg { 0%,70%{opacity:1} 100%{opacity:0} }
   .chat-name { color:var(--neon-cyan); font-weight:700; }
-
-  #pingDot { position:absolute; bottom:8px; right:50%; width:8px; height:8px; border-radius:50%; background:var(--neon-green); box-shadow:0 0 8px var(--neon-green); z-index:100; animation:pingPulse 2s infinite; }
-
+  #waveBanner { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-family:'Russo One',sans-serif; font-size:clamp(40px,10vw,72px); color:var(--neon-pink); filter:drop-shadow(0 0 30px var(--neon-pink)); z-index:35; opacity:0; pointer-events:none; }
+  #waveBanner.show { animation:waveFlash 1.6s ease-out; }
+  @keyframes waveFlash { 0%{opacity:0;transform:translate(-50%,-50%) scale(1.4)} 30%{opacity:1;transform:translate(-50%,-50%) scale(1)} 70%{opacity:1} 100%{opacity:0} }
   .hint { font-size:11px; color:rgba(255,255,255,0.25); letter-spacing:1px; text-align:center; max-width:340px; }
-
+  #loadingScreen { position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; z-index:999; }
+  .spinner { width:48px; height:48px; border:4px solid rgba(0,245,255,0.2); border-top-color:var(--neon-cyan); border-radius:50%; animation:spin 0.8s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .logout-link { font-size:11px; color:rgba(255,255,255,0.3); cursor:pointer; letter-spacing:1px; text-decoration:underline; }
+  .logout-link:active { color:var(--neon-pink); }
+  .mode-cards { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; width:min(540px,95vw); }
+  .mode-card { flex:1; min-width:150px; background:var(--panel); border:2px solid var(--border); border-radius:14px; padding:18px; cursor:pointer; transition:transform 0.15s,box-shadow 0.2s; text-align:center; }
+  .mode-card:active { transform:scale(0.97); }
+  .mode-card.solo { border-color:rgba(57,255,20,0.3); }
+  .mode-card.solo:hover { box-shadow:0 0 25px rgba(57,255,20,0.2); }
+  .mode-card.multi:hover { box-shadow:0 0 25px rgba(0,245,255,0.2); }
+  .mode-icon { font-size:36px; }
+  .mode-name { font-family:'Russo One',sans-serif; font-size:18px; margin-top:6px; letter-spacing:1px; }
+  .mode-desc { font-size:11px; color:rgba(255,255,255,0.4); margin-top:4px; letter-spacing:0.5px; }
   @media (max-width:480px) {
     .emote-btn { width:46px; height:46px; font-size:17px; }
     #emoteBar { gap:6px; bottom:16px; right:16px; max-width:160px; }
@@ -251,11 +200,38 @@
 <body>
 <div id="app">
 
-  <!-- MENU -->
-  <div id="menuScreen" class="screen scroll-screen active">
-    <div class="tag-online">ONLINE MULTIPLAYER</div>
+  <!-- LOADING -->
+  <div id="loadingScreen">
+    <div class="game-title" style="font-size:48px">LASER TRACER</div>
+    <div class="spinner"></div>
+    <div style="color:rgba(255,255,255,0.4);letter-spacing:2px;font-size:12px" id="loadingText">VERBINDE...</div>
+  </div>
+
+  <!-- AUTH -->
+  <div id="authScreen" class="screen scroll-screen">
     <div class="game-title">LASER TRACER</div>
     <div class="subtitle">von Stumble Guys</div>
+    <div class="separator"></div>
+    <div class="auth-box">
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">LOGIN</div>
+        <div class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">REGISTRIEREN</div>
+      </div>
+      <input type="text" id="authUsername" placeholder="Benutzername" maxlength="14" style="display:none" />
+      <input type="email" id="authEmail" placeholder="E-Mail" />
+      <input type="password" id="authPassword" placeholder="Passwort (min. 6 Zeichen)" />
+      <button class="btn btn-cyan" id="authSubmit" onclick="doAuth()" style="width:100%">EINLOGGEN</button>
+      <div class="auth-divider">ODER</div>
+      <button class="btn btn-ghost" onclick="doGuest()" style="width:100%">🎮 ALS GAST SPIELEN</button>
+      <div class="error-msg" id="authError"></div>
+    </div>
+    <div class="hint" id="firebaseHint"></div>
+  </div>
+
+  <!-- MENU -->
+  <div id="menuScreen" class="screen scroll-screen">
+    <div id="onlineTag" class="tag-online">ONLINE MULTIPLAYER</div>
+    <div class="game-title">LASER TRACER</div>
     <div class="separator"></div>
 
     <div class="profile-card">
@@ -268,37 +244,50 @@
         <div class="xp-bar-bg"><div class="xp-bar-fill" id="xpBar" style="width:0%"></div></div>
         <div class="xp-text" id="xpText">0 / 100 XP</div>
       </div>
-      <div class="coins-display">
-        <span class="coin-icon">🪙</span>
-        <span class="coin-amount" id="coinAmount">0</span>
+      <div class="coins-display"><span>🪙</span><span class="coin-amount" id="coinAmount">0</span></div>
+    </div>
+    <div class="stats-row">
+      <span>Siege: <b id="statWins">0</b></span>
+      <span>Spiele: <b id="statGames">0</b></span>
+      <span>Best Wave: <b id="statBestWave">0</b></span>
+    </div>
+
+    <div class="mode-cards">
+      <div class="mode-card solo" onclick="startSolo()">
+        <div class="mode-icon">🎯</div>
+        <div class="mode-name">SOLO ÜBEN</div>
+        <div class="mode-desc">Überlebe Wellen, sammle Belohnungen</div>
+      </div>
+      <div class="mode-card multi" onclick="showMultiOptions()">
+        <div class="mode-icon">⚔️</div>
+        <div class="mode-name">MULTIPLAYER</div>
+        <div class="mode-desc">Online gegen Freunde</div>
       </div>
     </div>
 
-    <input type="text" id="playerNameInput" maxlength="14" placeholder="Dein Name" />
-
-    <div class="menu-btns">
-      <button class="btn btn-cyan" onclick="createRoom()">🚀 ROOM ERSTELLEN</button>
-      <button class="btn btn-pink" onclick="showJoinMenu()">🔗 BEITRETEN</button>
-    </div>
-    <div id="joinArea" style="display:none">
-      <div class="join-form">
-        <input type="text" class="code-input" id="joinCodeInput" maxlength="4" placeholder="CODE" />
-        <button class="btn btn-cyan" onclick="joinRoom()">JOIN</button>
+    <div id="multiOptions" style="display:none;flex-direction:column;gap:10px;align-items:center">
+      <div class="menu-btns">
+        <button class="btn btn-cyan" onclick="createRoom()">🚀 ROOM ERSTELLEN</button>
+        <button class="btn btn-pink" onclick="showJoinMenu()">🔗 BEITRETEN</button>
+      </div>
+      <div id="joinArea" style="display:none">
+        <div class="join-form">
+          <input type="text" class="code-input" id="joinCodeInput" maxlength="4" placeholder="CODE" />
+          <button class="btn btn-cyan" onclick="joinRoom()">JOIN</button>
+        </div>
       </div>
     </div>
+
     <button class="btn btn-gold" onclick="openShop()">🎨 SKIN SHOP</button>
     <div class="error-msg" id="menuError"></div>
-    <div class="hint">Teile den 4-stelligen Code mit Freunden — bis zu 8 Spieler. Gewinne XP & Münzen, schalte Skins frei!</div>
+    <div class="logout-link" id="logoutLink" onclick="doLogout()">Abmelden</div>
   </div>
 
   <!-- SHOP -->
   <div id="shopScreen" class="screen scroll-screen">
     <div class="shop-header">
       <div class="shop-title">🎨 SKINS</div>
-      <div class="coins-display">
-        <span class="coin-icon">🪙</span>
-        <span class="coin-amount" id="shopCoins">0</span>
-      </div>
+      <div class="coins-display"><span>🪙</span><span class="coin-amount" id="shopCoins">0</span></div>
     </div>
     <div class="skins-grid" id="skinsGrid"></div>
     <div class="error-msg" id="shopError" style="margin-top:12px"></div>
@@ -316,9 +305,10 @@
       <div class="players-list" id="playersList"></div>
       <div class="lobby-btns">
         <button class="btn btn-cyan" id="startBtn" onclick="startGame()">▶ STARTEN</button>
-        <button class="btn btn-ghost btn-small" onclick="goMenu()">← ZURÜCK</button>
+        <button class="btn btn-ghost btn-small" onclick="leaveRoom()">← ZURÜCK</button>
       </div>
-      <div class="error-msg" id="lobbyError" style="margin-top:8px"></div>
+      <div class="lobby-hint" id="lobbyHint">Mindestens 2 Spieler zum Starten</div>
+      <div class="error-msg" id="lobbyError" style="margin-top:4px"></div>
     </div>
   </div>
 
@@ -326,17 +316,13 @@
   <div id="gameScreen" class="screen">
     <canvas id="gameCanvas"></canvas>
     <div id="hud">
-      <div class="hud-panel"><div class="alive-count" id="aliveCount">👤 0</div><div class="hud-label">ALIVE</div></div>
-      <div class="hud-panel"><div class="hud-timer" id="timerDisplay">60</div><div class="hud-label">SEKUNDEN</div></div>
-      <div class="hud-panel"><div id="myRank" style="font-family:'Russo One',sans-serif;font-size:18px;color:var(--neon-yellow)">#1</div><div class="hud-label">RANK</div></div>
+      <div class="hud-panel"><div class="alive-count" id="aliveCount">👤 0</div><div class="hud-label" id="aliveLabel">ALIVE</div></div>
+      <div class="hud-panel"><div class="hud-timer" id="timerDisplay">60</div><div class="hud-label" id="timerLabel">SEKUNDEN</div></div>
+      <div class="hud-panel"><div id="myRank" style="font-family:'Russo One',sans-serif;font-size:18px;color:var(--neon-yellow)">#1</div><div class="hud-label" id="rankLabel">RANK</div></div>
     </div>
     <div id="chatBox"></div>
-
-    <div id="joystick">
-      <div class="joy-base"></div>
-      <div class="joy-stick" id="joyStick"></div>
-    </div>
-
+    <div id="waveBanner"></div>
+    <div id="joystick"><div class="joy-base"></div><div class="joy-stick" id="joyStick"></div></div>
     <div id="emoteBar">
       <div class="emote-btn" onclick="sendEmote('📦','Box')"><span>📦</span><span class="key">1</span></div>
       <div class="emote-btn" onclick="sendEmote('👋','Wave')"><span>👋</span><span class="key">2</span></div>
@@ -345,9 +331,7 @@
       <div class="emote-btn" onclick="sendEmote('😂','LOL')"><span>😂</span><span class="key">5</span></div>
       <div class="emote-btn" onclick="sendEmote('🏆','GG')"><span>🏆</span><span class="key">6</span></div>
     </div>
-
     <div id="countdownOverlay"><div class="countdown-num" id="countdownNum">3</div></div>
-
     <div id="resultOverlay">
       <div class="result-title" id="resultTitle">GG!</div>
       <div class="result-stats" id="resultStats"></div>
@@ -356,573 +340,767 @@
         <div class="reward-item"><div class="reward-val xp" id="rewardXp">+0</div><div class="reward-lbl">XP</div></div>
         <div class="reward-item"><div class="reward-val coin" id="rewardCoin">+0</div><div class="reward-lbl">Münzen</div></div>
       </div>
-      <div class="menu-btns">
-        <button class="btn btn-cyan" onclick="backToLobby()">🔄 NOCHMAL</button>
-        <button class="btn btn-ghost btn-small" onclick="goMenu()">🏠 MENÜ</button>
-      </div>
+      <div class="menu-btns" id="resultBtns"></div>
     </div>
-    <div id="pingDot"></div>
+    <div id="pingDot" style="position:absolute;bottom:8px;right:50%;width:8px;height:8px;border-radius:50%;background:var(--neon-green);box-shadow:0 0 8px var(--neon-green);z-index:100;animation:pingPulse 2s infinite"></div>
   </div>
 </div>
 
-<script>
+<script type="module">
 // ============================================================
-//  LASER TRACER — Progression + Skins + Mobile
+//  FIREBASE SETUP
+//  >>> HIER DEINE FIREBASE CONFIG EINFÜGEN <<<
+//  Anleitung steht unten im Chat. Solange leer = Offline-Modus.
 // ============================================================
-
-const EMOTES = {'📦':'Box','👋':'Wave','💀':'RIP','🔥':'Fire','😂':'LOL','🏆':'GG'};
-
-// ---- SKIN DEFINITIONS (color = base, pattern affects render) ----
-const SKINS = [
-  {id:'cyan',    name:'Cyan',     color:'#00f5ff', rarity:'common',    price:0,    levelReq:1, pattern:'solid'},
-  {id:'pink',    name:'Pink',     color:'#ff006e', rarity:'common',    price:0,    levelReq:1, pattern:'solid'},
-  {id:'green',   name:'Lime',     color:'#39ff14', rarity:'common',    price:100,  levelReq:1, pattern:'solid'},
-  {id:'orange',  name:'Orange',   color:'#ff8800', rarity:'common',    price:100,  levelReq:1, pattern:'solid'},
-  {id:'purple',  name:'Purple',   color:'#cc00ff', rarity:'rare',      price:250,  levelReq:2, pattern:'glow'},
-  {id:'ice',     name:'Frost',    color:'#aaffff', rarity:'rare',      price:300,  levelReq:3, pattern:'glow'},
-  {id:'lava',    name:'Lava',     color:'#ff3300', rarity:'epic',      price:600,  levelReq:5, pattern:'fire'},
-  {id:'toxic',   name:'Toxic',    color:'#aaff00', rarity:'epic',      price:600,  levelReq:6, pattern:'fire'},
-  {id:'galaxy',  name:'Galaxy',   color:'#7b2fff', rarity:'epic',      price:800,  levelReq:8, pattern:'stars'},
-  {id:'gold',    name:'Golden',   color:'#ffd700', rarity:'legendary', price:1500, levelReq:10,pattern:'shine'},
-  {id:'rainbow', name:'Rainbow',  color:'#ff0088', rarity:'legendary', price:2000, levelReq:12,pattern:'rainbow'},
-  {id:'void',    name:'Void',     color:'#5500aa', rarity:'legendary', price:2500, levelReq:15,pattern:'void'},
-];
-
-// ---- PERSISTENT PROGRESS (in-memory; survives within session) ----
-let progress = {
-  name: '',
-  level: 1,
-  xp: 0,
-  coins: 200,
-  owned: ['cyan','pink'],
-  equipped: 'cyan',
-  wins: 0,
-  games: 0
+const firebaseConfig = {
+  apiKey: "DEIN_API_KEY",
+  authDomain: "DEIN_PROJEKT.firebaseapp.com",
+  databaseURL: "https://DEIN_PROJEKT-default-rtdb.firebaseio.com",
+  projectId: "DEIN_PROJEKT",
+  storageBucket: "DEIN_PROJEKT.appspot.com",
+  messagingSenderId: "XXX",
+  appId: "XXX"
 };
 
-function xpForLevel(lvl){ return 100 + (lvl-1)*60; }
+let FB = { ready:false, auth:null, db:null, user:null, modules:null };
 
-function getSkin(id){ return SKINS.find(s=>s.id===id) || SKINS[0]; }
+async function initFirebase(){
+  if(firebaseConfig.apiKey === "DEIN_API_KEY"){
+    console.warn("Firebase nicht konfiguriert – Offline-Modus aktiv.");
+    return false;
+  }
+  try {
+    const appMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+    const authMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+    const dbMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+    const app = appMod.initializeApp(firebaseConfig);
+    FB.auth = authMod.getAuth(app);
+    FB.db = dbMod.getDatabase(app);
+    FB.modules = { authMod, dbMod };
+    FB.ready = true;
+    return true;
+  } catch(e){
+    console.error("Firebase init fehlgeschlagen:", e);
+    return false;
+  }
+}
+
+// ============================================================
+//  GAME DATA
+// ============================================================
+const EMOTES = {'📦':'Box','👋':'Wave','💀':'RIP','🔥':'Fire','😂':'LOL','🏆':'GG'};
+const SKINS = [
+  {id:'cyan',name:'Cyan',color:'#00f5ff',rarity:'common',price:0,levelReq:1,pattern:'solid'},
+  {id:'pink',name:'Pink',color:'#ff006e',rarity:'common',price:0,levelReq:1,pattern:'solid'},
+  {id:'green',name:'Lime',color:'#39ff14',rarity:'common',price:100,levelReq:1,pattern:'solid'},
+  {id:'orange',name:'Orange',color:'#ff8800',rarity:'common',price:100,levelReq:1,pattern:'solid'},
+  {id:'purple',name:'Purple',color:'#cc00ff',rarity:'rare',price:250,levelReq:2,pattern:'glow'},
+  {id:'ice',name:'Frost',color:'#aaffff',rarity:'rare',price:300,levelReq:3,pattern:'glow'},
+  {id:'lava',name:'Lava',color:'#ff3300',rarity:'epic',price:600,levelReq:5,pattern:'fire'},
+  {id:'toxic',name:'Toxic',color:'#aaff00',rarity:'epic',price:600,levelReq:6,pattern:'fire'},
+  {id:'galaxy',name:'Galaxy',color:'#7b2fff',rarity:'epic',price:800,levelReq:8,pattern:'stars'},
+  {id:'gold',name:'Golden',color:'#ffd700',rarity:'legendary',price:1500,levelReq:10,pattern:'shine'},
+  {id:'rainbow',name:'Rainbow',color:'#ff0088',rarity:'legendary',price:2000,levelReq:12,pattern:'rainbow'},
+  {id:'void',name:'Void',color:'#5500aa',rarity:'legendary',price:2500,levelReq:15,pattern:'void'},
+];
+const PLAYER_COLORS = ['#00f5ff','#ff006e','#39ff14','#ffff00','#ff8800','#cc00ff','#ff3333','#00ff88'];
+
+let progress = { name:'', level:1, xp:0, coins:200, owned:['cyan','pink'], equipped:'cyan', wins:0, games:0, bestWave:0 };
+
+function xpForLevel(lvl){ return 100 + (lvl-1)*60; }
+function getSkin(id){ return SKINS.find(s=>s.id===id)||SKINS[0]; }
 function myColor(){ return getSkin(progress.equipped).color; }
 function myPattern(){ return getSkin(progress.equipped).pattern; }
 
-// ---- STATE ----
+// ============================================================
+//  STATE
+// ============================================================
 let myId = Math.random().toString(36).slice(2,8);
-let myName = '';
-let roomCode = '';
-let isHost = false;
-let players = {};
-let gameRunning = false, gameOver = false;
-let gameTimer = 60, timerInterval = null;
-let channel = null, animFrame = null;
-let keys = {};
-let lasers = [], particles = [];
-let canvasW = 800, canvasH = 500;
-let lastEmoteTime = 0;
-let touchTarget = null;
-let isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-let joyVec = {x:0,y:0};
-const PLAYER_COLORS = ['#00f5ff','#ff006e','#39ff14','#ffff00','#ff8800','#cc00ff','#ff3333','#00ff88'];
+let mode = 'menu'; // 'solo' | 'multi'
+let roomCode='', isHost=false;
+let players={};
+let gameRunning=false, gameOver=false;
+let gameTimer=60, timerInterval=null;
+let animFrame=null, keys={}, lasers=[], particles=[];
+let canvasW=800, canvasH=500, lastEmoteTime=0, touchTarget=null;
+let isMobile=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+let joyVec={x:0,y:0};
+let isOnline=false;
 
-// ---- UI ----
+// Solo state
+let soloWave=0, soloAlive=true, soloSurvTime=0, soloLaserTimer=0;
+
+// Firebase room refs
+let roomRef=null, roomListeners=[];
+
+// ============================================================
+//  UI HELPERS
+// ============================================================
 function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-function setError(id,msg){ const el=document.getElementById(id); if(el){el.textContent=msg; setTimeout(()=>el.textContent='',3000);} }
+function setError(id,msg,ok){ const el=document.getElementById(id); if(el){ el.textContent=msg; el.className='error-msg'+(ok?' ok-msg':''); setTimeout(()=>el.textContent='',3500);} }
 function randCode(){ return Math.random().toString(36).slice(2,6).toUpperCase(); }
 
-// ---- AVATAR SVG ----
-function avatarSVG(color, size, pattern){
-  pattern = pattern||'solid';
-  let extra = '';
+function avatarSVG(color,size,pattern){
+  pattern=pattern||'solid';
   if(pattern==='rainbow') color='url(#rb)';
+  const cid='g'+(''+color).replace(/[#()]/g,'');
   return `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
-    <defs>
-      <radialGradient id="g${color.replace('#','')}" cx="40%" cy="35%">
-        <stop offset="0%" stop-color="#fff"/>
-        <stop offset="45%" stop-color="${color==='url(#rb)'?'#ff0088':color}"/>
-        <stop offset="100%" stop-color="${color==='url(#rb)'?'#8800ff':color}"/>
-      </radialGradient>
-      <linearGradient id="rb" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#ff0044"/><stop offset="33%" stop-color="#ffdd00"/>
-        <stop offset="66%" stop-color="#00ddff"/><stop offset="100%" stop-color="#cc00ff"/>
-      </linearGradient>
-    </defs>
-    <circle cx="30" cy="30" r="22" fill="url(#g${color.replace('#','')})" stroke="${color==='url(#rb)'?'#fff':color}" stroke-width="2"/>
-    <circle cx="23" cy="26" r="4.5" fill="#1a1a2e"/>
-    <circle cx="37" cy="26" r="4.5" fill="#1a1a2e"/>
-    <circle cx="24.5" cy="24.5" r="1.8" fill="#fff"/>
-    <circle cx="38.5" cy="24.5" r="1.8" fill="#fff"/>
-    <path d="M 23 38 Q 30 43 37 38" stroke="#1a1a2e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-  </svg>`;
+    <defs><radialGradient id="${cid}" cx="40%" cy="35%">
+      <stop offset="0%" stop-color="#fff"/><stop offset="45%" stop-color="${color==='url(#rb)'?'#ff0088':color}"/>
+      <stop offset="100%" stop-color="${color==='url(#rb)'?'#8800ff':color}"/></radialGradient>
+      <linearGradient id="rb" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff0044"/><stop offset="33%" stop-color="#ffdd00"/><stop offset="66%" stop-color="#00ddff"/><stop offset="100%" stop-color="#cc00ff"/></linearGradient></defs>
+    <circle cx="30" cy="30" r="22" fill="url(#${cid})" stroke="${color==='url(#rb)'?'#fff':color}" stroke-width="2"/>
+    <circle cx="23" cy="26" r="4.5" fill="#1a1a2e"/><circle cx="37" cy="26" r="4.5" fill="#1a1a2e"/>
+    <circle cx="24.5" cy="24.5" r="1.8" fill="#fff"/><circle cx="38.5" cy="24.5" r="1.8" fill="#fff"/>
+    <path d="M 23 38 Q 30 43 37 38" stroke="#1a1a2e" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`;
 }
 
-// ---- PROFILE RENDER ----
 function renderProfile(){
-  document.getElementById('profileName').textContent = progress.name || 'Player';
-  document.getElementById('profileLevel').textContent = progress.level;
-  document.getElementById('coinAmount').textContent = progress.coins;
-  document.getElementById('profileAvatar').innerHTML = avatarSVG(myColor(),56,myPattern());
-  const need = xpForLevel(progress.level);
-  const pct = Math.min(100,(progress.xp/need)*100);
-  document.getElementById('xpBar').style.width = pct+'%';
-  document.getElementById('xpText').textContent = `${progress.xp} / ${need} XP`;
+  document.getElementById('profileName').textContent=progress.name||'Player';
+  document.getElementById('profileLevel').textContent=progress.level;
+  document.getElementById('coinAmount').textContent=progress.coins;
+  document.getElementById('profileAvatar').innerHTML=avatarSVG(myColor(),56,myPattern());
+  const need=xpForLevel(progress.level);
+  document.getElementById('xpBar').style.width=Math.min(100,(progress.xp/need)*100)+'%';
+  document.getElementById('xpText').textContent=`${progress.xp} / ${need} XP`;
+  document.getElementById('statWins').textContent=progress.wins;
+  document.getElementById('statGames').textContent=progress.games;
+  document.getElementById('statBestWave').textContent=progress.bestWave;
 }
 
-// ---- SHOP ----
-function openShop(){ renderShop(); showScreen('shopScreen'); }
+// ============================================================
+//  AUTH
+// ============================================================
+let authMode='login';
+window.switchAuthTab=(m)=>{
+  authMode=m;
+  document.getElementById('tabLogin').classList.toggle('active',m==='login');
+  document.getElementById('tabRegister').classList.toggle('active',m==='register');
+  document.getElementById('authUsername').style.display=m==='register'?'block':'none';
+  document.getElementById('authSubmit').textContent=m==='register'?'KONTO ERSTELLEN':'EINLOGGEN';
+};
+
+window.doAuth=async()=>{
+  if(!FB.ready){ setError('authError','Firebase nicht konfiguriert. Nutze Gast-Modus.'); return; }
+  const email=document.getElementById('authEmail').value.trim();
+  const pass=document.getElementById('authPassword').value;
+  const uname=document.getElementById('authUsername').value.trim();
+  if(!email||!pass){ setError('authError','E-Mail und Passwort eingeben!'); return; }
+  if(authMode==='register' && !uname){ setError('authError','Benutzername eingeben!'); return; }
+  const { authMod } = FB.modules;
+  try {
+    if(authMode==='register'){
+      const cred=await authMod.createUserWithEmailAndPassword(FB.auth,email,pass);
+      progress.name=uname;
+      await saveProgress(cred.user.uid);
+    } else {
+      await authMod.signInWithEmailAndPassword(FB.auth,email,pass);
+    }
+  } catch(e){
+    setError('authError', friendlyAuthError(e.code||e.message));
+  }
+};
+
+function friendlyAuthError(code){
+  const map={
+    'auth/email-already-in-use':'E-Mail bereits registriert.',
+    'auth/invalid-email':'Ungültige E-Mail.',
+    'auth/weak-password':'Passwort zu schwach (min. 6 Zeichen).',
+    'auth/wrong-password':'Falsches Passwort.',
+    'auth/user-not-found':'Konto nicht gefunden.',
+    'auth/invalid-credential':'E-Mail oder Passwort falsch.'
+  };
+  return map[code]||'Fehler: '+code;
+}
+
+window.doGuest=()=>{
+  isOnline=false;
+  if(!progress.name){
+    const adj=['Neon','Laser','Turbo','Hyper','Ultra','Mega','Pixel'];
+    const noun=['Fox','Runner','Tiger','Storm','Ninja','Blaze','Bot'];
+    progress.name=adj[Math.floor(Math.random()*adj.length)]+noun[Math.floor(Math.random()*noun.length)];
+  }
+  enterMenu();
+  setError('menuError','Gast-Modus: Fortschritt wird nicht gespeichert.');
+};
+
+window.doLogout=async()=>{
+  if(FB.ready && FB.user){
+    await saveProgress(FB.user.uid);
+    const { authMod }=FB.modules;
+    await authMod.signOut(FB.auth);
+  } else {
+    showScreen('authScreen');
+  }
+};
+
+async function saveProgress(uid){
+  if(!FB.ready||!uid) return;
+  const { dbMod }=FB.modules;
+  try { await dbMod.set(dbMod.ref(FB.db,'users/'+uid),progress); } catch(e){ console.error('save',e); }
+}
+async function loadProgress(uid){
+  if(!FB.ready||!uid) return false;
+  const { dbMod }=FB.modules;
+  try {
+    const snap=await dbMod.get(dbMod.ref(FB.db,'users/'+uid));
+    if(snap.exists()){ progress={...progress,...snap.val()}; if(!progress.owned) progress.owned=['cyan','pink']; return true; }
+  } catch(e){ console.error('load',e); }
+  return false;
+}
+
+function enterMenu(){
+  document.getElementById('onlineTag').className = isOnline?'tag-online':'tag-online tag-offline';
+  document.getElementById('onlineTag').textContent = isOnline?'ONLINE • EINGELOGGT':'OFFLINE • GAST';
+  document.getElementById('logoutLink').textContent = isOnline?'Abmelden':'Zum Login';
+  renderProfile();
+  showScreen('menuScreen');
+}
+
+// ============================================================
+//  MENU NAV
+// ============================================================
+window.showMultiOptions=()=>{
+  if(!isOnline){ setError('menuError','Multiplayer braucht Login + Firebase. Du kannst Solo spielen!'); return; }
+  const m=document.getElementById('multiOptions');
+  m.style.display=m.style.display==='none'?'flex':'none';
+};
+window.showJoinMenu=()=>{ document.getElementById('joinArea').style.display='block'; };
+
+window.goMenu=()=>{
+  // FIX: vollständiges Cleanup, damit Zurück-Button immer funktioniert
+  cleanupGame();
+  leaveFirebaseRoom();
+  players={}; mode='menu';
+  document.getElementById('multiOptions').style.display='none';
+  document.getElementById('joinArea').style.display='none';
+  renderProfile();
+  enterMenu();
+};
+
+// ============================================================
+//  SHOP
+// ============================================================
+window.openShop=()=>{ renderShop(); showScreen('shopScreen'); };
 function renderShop(){
-  document.getElementById('shopCoins').textContent = progress.coins;
-  const grid = document.getElementById('skinsGrid');
-  grid.innerHTML = '';
+  document.getElementById('shopCoins').textContent=progress.coins;
+  const grid=document.getElementById('skinsGrid'); grid.innerHTML='';
   SKINS.forEach(s=>{
-    const owned = progress.owned.includes(s.id);
-    const equipped = progress.equipped === s.id;
-    const lockedByLevel = progress.level < s.levelReq;
-    let cls = 'skin-card';
-    if(equipped) cls+=' equipped';
-    else if(owned) cls+=' owned';
-    if(lockedByLevel && !owned) cls+=' locked';
-
+    const owned=progress.owned.includes(s.id);
+    const equipped=progress.equipped===s.id;
+    const lockedByLevel=progress.level<s.levelReq;
+    let cls='skin-card'; if(equipped)cls+=' equipped'; else if(owned)cls+=' owned'; if(lockedByLevel&&!owned)cls+=' locked';
     let bottom;
-    if(equipped) bottom = `<div class="skin-status status-equipped">✓ Aktiv</div>`;
-    else if(owned) bottom = `<div class="skin-status status-owned">Anlegen</div>`;
-    else if(lockedByLevel) bottom = `<div class="level-req">🔒 Level ${s.levelReq}</div>`;
-    else bottom = `<div class="skin-price"><span>🪙</span>${s.price}</div>`;
-
-    const card = document.createElement('div');
-    card.className = cls;
-    card.innerHTML = `
-      ${lockedByLevel && !owned ? '<div class="lock-overlay">🔒</div>' : ''}
+    if(equipped) bottom='<div class="skin-status status-equipped">✓ Aktiv</div>';
+    else if(owned) bottom='<div class="skin-status status-owned">Anlegen</div>';
+    else if(lockedByLevel) bottom=`<div class="level-req">🔒 Level ${s.levelReq}</div>`;
+    else bottom=`<div class="skin-price"><span>🪙</span>${s.price}</div>`;
+    const card=document.createElement('div'); card.className=cls;
+    card.innerHTML=`${lockedByLevel&&!owned?'<div class="lock-overlay">🔒</div>':''}
       <div class="skin-preview">${avatarSVG(s.color,60,s.pattern)}</div>
       <div class="skin-name">${s.name}</div>
-      <div class="skin-rarity rarity-${s.rarity}">${s.rarity}</div>
-      ${bottom}`;
-    card.onclick = ()=>handleSkinClick(s);
+      <div class="skin-rarity rarity-${s.rarity}">${s.rarity}</div>${bottom}`;
+    card.onclick=()=>handleSkinClick(s);
     grid.appendChild(card);
   });
 }
-
 function handleSkinClick(s){
-  const owned = progress.owned.includes(s.id);
-  if(owned){
-    progress.equipped = s.id;
-    renderShop(); renderProfile();
-    return;
-  }
-  if(progress.level < s.levelReq){
-    setError('shopError', `Erreiche erst Level ${s.levelReq}!`);
-    return;
-  }
-  if(progress.coins < s.price){
-    setError('shopError', `Nicht genug Münzen! (${s.price} benötigt)`);
-    return;
-  }
-  progress.coins -= s.price;
-  progress.owned.push(s.id);
-  progress.equipped = s.id;
-  renderShop(); renderProfile();
+  const owned=progress.owned.includes(s.id);
+  if(owned){ progress.equipped=s.id; renderShop(); renderProfile(); persist(); return; }
+  if(progress.level<s.levelReq){ setError('shopError',`Erreiche erst Level ${s.levelReq}!`); return; }
+  if(progress.coins<s.price){ setError('shopError',`Nicht genug Münzen! (${s.price} nötig)`); return; }
+  progress.coins-=s.price; progress.owned.push(s.id); progress.equipped=s.id;
+  renderShop(); renderProfile(); persist();
 }
+function persist(){ if(FB.ready&&FB.user) saveProgress(FB.user.uid); }
 
-// ---- CHANNEL ----
-function openChannel(code){ if(channel) channel.close(); channel=new BroadcastChannel('laser_tracer_pro_'+code); channel.onmessage=onMessage; }
-function broadcast(msg){ if(channel) channel.postMessage({...msg, from:myId}); }
+// ============================================================
+//  CANVAS / INPUT (shared)
+// ============================================================
+function resizeCanvas(){ const c=document.getElementById('gameCanvas'); canvasW=c.parentElement.clientWidth; canvasH=c.parentElement.clientHeight; c.width=canvasW; c.height=canvasH; }
+window.addEventListener('resize',()=>{ if(animFrame) resizeCanvas(); });
 
-// ---- NAME ----
-function getName(){ const n=document.getElementById('playerNameInput').value.trim(); return n || 'Player_'+myId.slice(0,4); }
-
-// ---- ROOM ----
-function createRoom(){
-  myName=getName(); progress.name=myName; roomCode=randCode(); isHost=true;
-  openChannel(roomCode); addSelf(); showLobby();
-  broadcast({type:'hello', name:myName, color:myColor(), pattern:myPattern(), level:progress.level});
-}
-function showJoinMenu(){ document.getElementById('joinArea').style.display='block'; }
-function joinRoom(){
-  const code=document.getElementById('joinCodeInput').value.trim().toUpperCase();
-  if(code.length!==4){ setError('menuError','Code muss 4 Zeichen sein!'); return; }
-  myName=getName(); progress.name=myName; roomCode=code; isHost=false;
-  openChannel(roomCode); addSelf(); showLobby();
-  broadcast({type:'hello', name:myName, color:myColor(), pattern:myPattern(), level:progress.level});
-}
-function copyCode(){
-  if(navigator.clipboard) navigator.clipboard.writeText(roomCode);
-  setError('lobbyError','Code kopiert: '+roomCode);
-}
-
-function addSelf(){
-  const idx=Object.keys(players).length;
-  players[myId]={ id:myId, name:myName, color:myColor(), pattern:myPattern(), level:progress.level,
-    x:200+idx*80, y:canvasH/2, vx:0, vy:0, alive:true, trail:[], emote:null, emoteTime:0 };
-}
-
-function showLobby(){
-  document.getElementById('lobbyCode').textContent=roomCode;
-  showScreen('lobbyScreen'); renderPlayersList();
-  if(!isHost){ const b=document.getElementById('startBtn'); b.style.opacity='0.3'; b.style.pointerEvents='none'; }
-  else { const b=document.getElementById('startBtn'); b.style.opacity='1'; b.style.pointerEvents='all'; }
-}
-
-function renderPlayersList(){
-  const list=document.getElementById('playersList');
-  const pArr=Object.values(players); const slots=8; list.innerHTML='';
-  for(let i=0;i<slots;i++){
-    const p=pArr[i];
-    if(p){
-      list.innerHTML+=`<div class="player-slot filled ${p.id===myId?'me':''}">
-        <div class="player-avatar-sm">${avatarSVG(p.color,32,p.pattern)}</div>
-        <div class="player-info">
-          <div class="player-name" style="color:${p.color}">${p.name}</div>
-          <div class="player-lvl">Lvl ${p.level||1} ${p.id===myId?'• DU':''}${isHost&&p.id===myId?' • HOST':''}</div>
-        </div></div>`;
-    } else {
-      list.innerHTML+=`<div class="player-slot"><span class="slot-empty">WARTEN...</span></div>`;
-    }
-  }
-}
-
-function goMenu(){
-  broadcast({type:'bye'}); if(channel) channel.close();
-  players={}; gameRunning=false; gameOver=false;
-  if(timerInterval) clearInterval(timerInterval);
-  if(animFrame) cancelAnimationFrame(animFrame);
-  document.getElementById('resultOverlay').classList.remove('show');
-  renderProfile(); showScreen('menuScreen');
-}
-
-// ---- MESSAGES ----
-function onMessage(e){
-  const msg=e.data; if(msg.from===myId) return;
-  if(msg.type==='hello'){
-    const idx=Object.keys(players).length;
-    if(!players[msg.from]){
-      players[msg.from]={ id:msg.from, name:msg.name, color:msg.color||PLAYER_COLORS[idx%8], pattern:msg.pattern||'solid', level:msg.level||1,
-        x:200+idx*80, y:canvasH/2, vx:0, vy:0, alive:true, trail:[], emote:null, emoteTime:0 };
-    }
-    broadcast({type:'players', players:sanitizePlayers()});
-    if(!gameRunning) renderPlayersList();
-  }
-  if(msg.type==='players'){
-    for(const [id,p] of Object.entries(msg.players)){
-      if(id!==myId && !players[id]) players[id]={...p, trail:[]};
-    }
-    if(!gameRunning) renderPlayersList();
-  }
-  if(msg.type==='startGame') startCountdown();
-  if(msg.type==='move' && players[msg.from]){
-    players[msg.from].x=msg.x; players[msg.from].y=msg.y;
-    players[msg.from].vx=msg.vx||0; players[msg.from].vy=msg.vy||0;
-    if(msg.trail) players[msg.from].trail=msg.trail;
-  }
-  if(msg.type==='died'){
-    if(players[msg.from]) players[msg.from].alive=false;
-    spawnParticles(msg.x||400,msg.y||250,players[msg.from]?.color||'#fff');
-  }
-  if(msg.type==='emote'){
-    if(players[msg.from]){ players[msg.from].emote=msg.emote; players[msg.from].emoteTime=Date.now(); }
-    addChatMsg(players[msg.from]?.name||'?', msg.emote);
-  }
-  if(msg.type==='bye'){ delete players[msg.from]; if(!gameRunning) renderPlayersList(); }
-}
-
-function sanitizePlayers(){
-  const out={};
-  for(const [id,p] of Object.entries(players))
-    out[id]={id:p.id,name:p.name,color:p.color,pattern:p.pattern,level:p.level,x:p.x,y:p.y,vx:0,vy:0,alive:p.alive,trail:[],emote:null,emoteTime:0};
-  return out;
-}
-
-// ---- START ----
-function startGame(){
-  if(Object.keys(players).length<1){ setError('lobbyError','Mindestens 1 Spieler!'); return; }
-  broadcast({type:'startGame'}); startCountdown();
-}
-
-function backToLobby(){
-  document.getElementById('resultOverlay').classList.remove('show');
-  document.getElementById('levelupBanner').style.display='none';
-  if(animFrame) cancelAnimationFrame(animFrame);
-  if(timerInterval) clearInterval(timerInterval);
-  Object.values(players).forEach((p,i)=>{ p.alive=true; p.trail=[]; p.x=100+(i%4)*150; p.y=100+Math.floor(i/4)*200; p.vx=0; p.vy=0; });
-  lasers=[]; particles=[]; gameRunning=false; gameOver=false;
-  showLobby();
-}
-
-function startCountdown(){
-  showScreen('gameScreen'); resizeCanvas();
-  gameRunning=false; gameOver=false; lasers=[]; particles=[];
-  document.getElementById('joystick').classList.toggle('show', isMobile);
-  Object.values(players).forEach((p,i)=>{
-    p.alive=true; p.trail=[];
-    p.x=80+(i%4)*Math.floor((canvasW-160)/3); p.y=canvasH*0.3+Math.floor(i/4)*canvasH*0.35; p.vx=0; p.vy=0;
-  });
-  const overlay=document.getElementById('countdownOverlay'); const numEl=document.getElementById('countdownNum');
-  overlay.classList.add('show'); numEl.textContent='3';
-  numEl.style.animation='none'; void numEl.offsetWidth; numEl.style.animation='countPop 0.6s ease-out';
-  let c=3;
-  const tick=setInterval(()=>{
-    c--;
-    if(c>0){ numEl.textContent=c; numEl.style.animation='none'; void numEl.offsetWidth; numEl.style.animation='countPop 0.6s ease-out'; }
-    else { numEl.textContent='GO!'; numEl.style.color='var(--neon-green)'; numEl.style.animation='none'; void numEl.offsetWidth; numEl.style.animation='countPop 0.6s ease-out';
-      clearInterval(tick); setTimeout(()=>{ overlay.classList.remove('show'); numEl.style.color='var(--neon-cyan)'; beginGame(); },700); }
-  },1000);
-  if(animFrame) cancelAnimationFrame(animFrame);
-  renderLoop();
-}
-
-function beginGame(){
-  gameRunning=true; gameTimer=60;
-  document.getElementById('timerDisplay').textContent='60';
-  setupInput(); spawnLasers();
-  timerInterval=setInterval(()=>{
-    if(!gameRunning) return;
-    gameTimer--; document.getElementById('timerDisplay').textContent=gameTimer;
-    if(gameTimer<=0) endGame(true);
-  },1000);
-}
-
-// ---- CANVAS ----
-function resizeCanvas(){
-  const c=document.getElementById('gameCanvas');
-  canvasW=c.parentElement.clientWidth; canvasH=c.parentElement.clientHeight;
-  c.width=canvasW; c.height=canvasH;
-}
-window.addEventListener('resize',()=>{ if(gameRunning||animFrame) resizeCanvas(); });
-
-// ---- INPUT ----
-const SPEED=3.6;
-let inputReady=false;
+const SPEED=3.6; let inputReady=false;
 function setupInput(){
-  if(!inputReady){
-    document.addEventListener('keydown',e=>{ keys[e.key]=true; });
-    document.addEventListener('keyup',e=>{ keys[e.key]=false; });
-    document.addEventListener('keydown',e=>{
-      if(!gameRunning) return;
-      const em={'1':'📦','2':'👋','3':'💀','4':'🔥','5':'😂','6':'🏆'};
-      if(em[e.key]) sendEmote(em[e.key], EMOTES[em[e.key]]);
-    });
-    const canvas=document.getElementById('gameCanvas');
-    canvas.addEventListener('touchstart',onCanvasTouch,{passive:true});
-    canvas.addEventListener('touchmove',onCanvasTouch,{passive:true});
-    setupJoystick();
-    inputReady=true;
-  }
+  if(inputReady) return; inputReady=true;
+  document.addEventListener('keydown',e=>{ keys[e.key]=true;
+    if(!gameRunning) return;
+    const em={'1':'📦','2':'👋','3':'💀','4':'🔥','5':'😂','6':'🏆'};
+    if(em[e.key]) sendEmote(em[e.key],EMOTES[em[e.key]]);
+  });
+  document.addEventListener('keyup',e=>{ keys[e.key]=false; });
+  const canvas=document.getElementById('gameCanvas');
+  canvas.addEventListener('touchstart',e=>{ if(isMobile)return; const t=e.touches[0]; const r=canvas.getBoundingClientRect(); touchTarget={x:t.clientX-r.left,y:t.clientY-r.top}; },{passive:true});
+  canvas.addEventListener('touchmove',e=>{ if(isMobile)return; const t=e.touches[0]; const r=canvas.getBoundingClientRect(); touchTarget={x:t.clientX-r.left,y:t.clientY-r.top}; },{passive:true});
+  setupJoystick();
 }
-function onCanvasTouch(e){
-  if(isMobile) return; // mobile uses joystick
-  const t=e.touches[0]; const rect=e.target.getBoundingClientRect();
-  touchTarget={x:t.clientX-rect.left, y:t.clientY-rect.top};
-}
-
-// ---- JOYSTICK ----
 function setupJoystick(){
-  const joy=document.getElementById('joystick');
-  const stick=document.getElementById('joyStick');
-  let active=false, cx=0, cy=0;
-  const radius=44;
+  const joy=document.getElementById('joystick'), stick=document.getElementById('joyStick');
+  let active=false,cx=0,cy=0; const radius=44;
   function start(e){ active=true; const r=joy.getBoundingClientRect(); cx=r.left+r.width/2; cy=r.top+r.height/2; move(e); }
-  function move(e){
-    if(!active) return;
-    const t=e.touches?e.touches[0]:e;
-    let dx=t.clientX-cx, dy=t.clientY-cy;
-    const dist=Math.hypot(dx,dy);
-    if(dist>radius){ dx=dx/dist*radius; dy=dy/dist*radius; }
-    stick.style.transform=`translate(${dx}px,${dy}px)`;
-    joyVec={x:dx/radius, y:dy/radius};
-  }
+  function move(e){ if(!active)return; const t=e.touches?e.touches[0]:e; let dx=t.clientX-cx,dy=t.clientY-cy; const d=Math.hypot(dx,dy); if(d>radius){dx=dx/d*radius;dy=dy/d*radius;} stick.style.transform=`translate(${dx}px,${dy}px)`; joyVec={x:dx/radius,y:dy/radius}; }
   function end(){ active=false; stick.style.transform='translate(0,0)'; joyVec={x:0,y:0}; }
-  joy.addEventListener('touchstart',start,{passive:true});
-  joy.addEventListener('touchmove',e=>{move(e);},{passive:true});
-  joy.addEventListener('touchend',end);
-  joy.addEventListener('mousedown',start);
-  window.addEventListener('mousemove',e=>{if(active)move(e);});
-  window.addEventListener('mouseup',end);
+  joy.addEventListener('touchstart',start,{passive:true}); joy.addEventListener('touchmove',move,{passive:true}); joy.addEventListener('touchend',end);
+  joy.addEventListener('mousedown',start); window.addEventListener('mousemove',e=>{if(active)move(e);}); window.addEventListener('mouseup',end);
+}
+function getInputVector(px,py){
+  let dx=0,dy=0;
+  if(keys['ArrowLeft']||keys['a']||keys['A'])dx=-1;
+  if(keys['ArrowRight']||keys['d']||keys['D'])dx=1;
+  if(keys['ArrowUp']||keys['w']||keys['W'])dy=-1;
+  if(keys['ArrowDown']||keys['s']||keys['S'])dy=1;
+  if(joyVec.x||joyVec.y){dx=joyVec.x;dy=joyVec.y;}
+  if(touchTarget){const dist=Math.hypot(touchTarget.x-px,touchTarget.y-py); if(dist>8){dx=(touchTarget.x-px)/dist;dy=(touchTarget.y-py)/dist;}}
+  if(dx!==0&&dy!==0&&Math.abs(dx)+Math.abs(dy)>1.2){const m=Math.hypot(dx,dy);dx/=m;dy/=m;}
+  return {dx,dy};
 }
 
-// ---- LASERS ----
-function spawnLasers(){
-  if(!gameRunning) return;
-  const n=2+Math.floor(Object.keys(players).length/2);
-  lasers=[]; for(let i=0;i<n;i++) spawnOneLaser();
-}
-function spawnOneLaser(){
+// ============================================================
+//  LASERS / PARTICLES (shared)
+// ============================================================
+function spawnOneLaser(speedMul){
+  speedMul=speedMul||1;
   const side=Math.floor(Math.random()*4); let x,y,angle;
-  if(side===0){ x=Math.random()*canvasW; y=-20; angle=Math.PI/2+(Math.random()-0.5); }
-  else if(side===1){ x=canvasW+20; y=Math.random()*canvasH; angle=Math.PI+(Math.random()-0.5); }
-  else if(side===2){ x=Math.random()*canvasW; y=canvasH+20; angle=-Math.PI/2+(Math.random()-0.5); }
-  else { x=-20; y=Math.random()*canvasH; angle=(Math.random()-0.5); }
+  if(side===0){x=Math.random()*canvasW;y=-20;angle=Math.PI/2+(Math.random()-0.5);}
+  else if(side===1){x=canvasW+20;y=Math.random()*canvasH;angle=Math.PI+(Math.random()-0.5);}
+  else if(side===2){x=Math.random()*canvasW;y=canvasH+20;angle=-Math.PI/2+(Math.random()-0.5);}
+  else {x=-20;y=Math.random()*canvasH;angle=(Math.random()-0.5);}
   const cols=['#ff006e','#ff8800','#ffff00','#cc00ff','#00ff88'];
-  lasers.push({ id:Math.random(), x, y, angle, speed:3.3+Math.random()*2,
-    color:cols[Math.floor(Math.random()*cols.length)], width:6+Math.random()*4, length:80+Math.random()*60, rotate:(Math.random()-0.5)*0.04 });
+  lasers.push({id:Math.random(),x,y,angle,speed:(3.3+Math.random()*2)*speedMul,color:cols[Math.floor(Math.random()*cols.length)],width:6+Math.random()*4,length:80+Math.random()*60,rotate:(Math.random()-0.5)*0.04});
 }
+function spawnParticles(x,y,color){ for(let i=0;i<28;i++){const a=Math.random()*Math.PI*2,s=2+Math.random()*5; particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,color,life:1,size:3+Math.random()*4});} }
 
-// ---- PARTICLES ----
-function spawnParticles(x,y,color){
-  for(let i=0;i<28;i++){ const a=Math.random()*Math.PI*2; const s=2+Math.random()*5;
-    particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,color,life:1,size:3+Math.random()*4}); }
+function updateLaserPhysics(speedMul){
+  for(let l of lasers){
+    l.x+=Math.cos(l.angle)*l.speed; l.y+=Math.sin(l.angle)*l.speed; l.angle+=l.rotate;
+    if(l.x<0||l.x>canvasW){l.angle=Math.PI-l.angle;l.x=Math.max(0,Math.min(canvasW,l.x));}
+    if(l.y<0||l.y>canvasH){l.angle=-l.angle;l.y=Math.max(0,Math.min(canvasH,l.y));}
+  }
 }
+function updateParticles(){ for(let p of particles){p.x+=p.vx;p.y+=p.vy;p.vx*=0.92;p.vy*=0.92;p.life-=0.025;} particles=particles.filter(p=>p.life>0); }
 
-// ---- EMOTES ----
-function sendEmote(emoji,name){
-  const now=Date.now(); if(now-lastEmoteTime<800) return; lastEmoteTime=now;
-  if(players[myId]){ players[myId].emote=emoji; players[myId].emoteTime=now; }
-  broadcast({type:'emote',emote:emoji}); addChatMsg('Du', emoji+' '+name);
-}
-function addChatMsg(name,text){
-  const box=document.getElementById('chatBox'); const div=document.createElement('div');
-  div.className='chat-msg'; div.innerHTML=`<span class="chat-name">${name}:</span> ${text}`;
-  box.appendChild(div); setTimeout(()=>div.remove(),5000);
-}
+// ============================================================
+//  EMOTES + CHAT
+// ============================================================
+window.sendEmote=(emoji,name)=>{
+  const now=Date.now(); if(now-lastEmoteTime<800)return; lastEmoteTime=now;
+  if(players[myId]){players[myId].emote=emoji;players[myId].emoteTime=now;}
+  if(mode==='multi'&&isOnline) fbBroadcast({type:'emote',emote:emoji});
+  addChatMsg('Du',emoji+' '+name);
+};
+function addChatMsg(name,text){ const box=document.getElementById('chatBox'); const d=document.createElement('div'); d.className='chat-msg'; d.innerHTML=`<span class="chat-name">${name}:</span> ${text}`; box.appendChild(d); setTimeout(()=>d.remove(),5000); }
 
-// ---- LOOP ----
-function renderLoop(){
-  animFrame=requestAnimationFrame(renderLoop);
-  const ctx=document.getElementById('gameCanvas').getContext('2d');
+// ============================================================
+//  RENDER (shared)
+// ============================================================
+function drawBackground(ctx){
   ctx.fillStyle='#050510'; ctx.fillRect(0,0,canvasW,canvasH);
   ctx.strokeStyle='rgba(0,245,255,0.04)'; ctx.lineWidth=1;
   for(let gx=0;gx<canvasW;gx+=40){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,canvasH);ctx.stroke();}
   for(let gy=0;gy<canvasH;gy+=40){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(canvasW,gy);ctx.stroke();}
-  if(gameRunning) updateGame();
-  drawLasers(ctx); drawParticles(ctx); drawPlayers(ctx);
-  const alive=Object.values(players).filter(p=>p.alive).length;
-  document.getElementById('aliveCount').textContent='👤 '+alive;
+}
+function drawLasers(ctx){
+  for(const l of lasers){
+    const x2=l.x-Math.cos(l.angle)*l.length,y2=l.y-Math.sin(l.angle)*l.length;
+    ctx.save();ctx.globalAlpha=0.18;ctx.strokeStyle=l.color;ctx.lineWidth=l.width*4;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(l.x,l.y);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();
+    ctx.save();ctx.strokeStyle=l.color;ctx.lineWidth=l.width;ctx.shadowBlur=30;ctx.shadowColor=l.color;ctx.globalAlpha=0.7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(l.x,l.y);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();
+    ctx.save();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.shadowBlur=20;ctx.shadowColor=l.color;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(l.x,l.y);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();
+    ctx.save();ctx.fillStyle='#fff';ctx.shadowBlur=20;ctx.shadowColor=l.color;ctx.beginPath();ctx.arc(l.x,l.y,l.width/2+2,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+}
+function drawParticles(ctx){ for(const p of particles){ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.shadowBlur=10;ctx.shadowColor=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();ctx.restore();} }
+function drawPlayers(ctx){
+  for(const p of Object.values(players)){
+    if(!p.alive)continue; const isMe=p.id===myId;
+    if(p.trail&&p.trail.length>2){ctx.save();for(let i=1;i<p.trail.length;i++){const t=i/p.trail.length;ctx.globalAlpha=t*0.4;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.trail[i].x,p.trail[i].y,4*t,0,Math.PI*2);ctx.fill();}ctx.restore();}
+    ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle=p.color;ctx.shadowBlur=30;ctx.shadowColor=p.color;ctx.beginPath();ctx.arc(p.x,p.y+4,14,0,Math.PI*2);ctx.fill();ctx.restore();
+    ctx.save();ctx.shadowBlur=isMe?25:15;ctx.shadowColor=p.color;
+    if(isMe){ctx.strokeStyle=p.color;ctx.lineWidth=2;ctx.globalAlpha=0.5;ctx.beginPath();ctx.arc(p.x,p.y,20,0,Math.PI*2);ctx.stroke();}
+    ctx.globalAlpha=1;
+    const g=ctx.createRadialGradient(p.x-4,p.y-6,2,p.x,p.y,16);g.addColorStop(0,'#fff');g.addColorStop(0.4,p.color);g.addColorStop(1,p.color+'88');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,16,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#1a1a2e';ctx.beginPath();ctx.arc(p.x-5,p.y-4,3.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(p.x+5,p.y-4,3.5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p.x-4,p.y-5,1.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(p.x+6,p.y-5,1.5,0,Math.PI*2);ctx.fill();ctx.restore();
+    ctx.save();ctx.font='bold 11px Exo 2,sans-serif';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.shadowBlur=8;ctx.shadowColor='#000';ctx.fillText((p.name||'?').slice(0,10),p.x,p.y-24);ctx.restore();
+    if(p.emote&&Date.now()-p.emoteTime<2500){ctx.save();ctx.font='22px serif';ctx.textAlign='center';const t=(Date.now()-p.emoteTime)/2500;ctx.globalAlpha=Math.max(0,1-t*1.5);ctx.fillText(p.emote,p.x,p.y-40-t*30);ctx.restore();}
+  }
 }
 
-function updateGame(){
-  const me=players[myId]; if(!me||!me.alive) {
-    checkGameOver(); return;
-  }
-  let dx=0,dy=0;
-  if(keys['ArrowLeft']||keys['a']||keys['A']) dx=-1;
-  if(keys['ArrowRight']||keys['d']||keys['D']) dx=1;
-  if(keys['ArrowUp']||keys['w']||keys['W']) dy=-1;
-  if(keys['ArrowDown']||keys['s']||keys['S']) dy=1;
-  if(joyVec.x||joyVec.y){ dx=joyVec.x; dy=joyVec.y; }
-  if(touchTarget){ const dist=Math.hypot(touchTarget.x-me.x,touchTarget.y-me.y); if(dist>8){dx=(touchTarget.x-me.x)/dist; dy=(touchTarget.y-me.y)/dist;} }
-  if(dx!==0&&dy!==0 && Math.abs(dx)+Math.abs(dy)>1.2){ const m=Math.hypot(dx,dy); dx/=m; dy/=m; }
+// ============================================================
+//  CLEANUP (FIX for back button)
+// ============================================================
+function cleanupGame(){
+  gameRunning=false; gameOver=false;
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  if(animFrame){cancelAnimationFrame(animFrame);animFrame=null;}
+  lasers=[]; particles=[]; touchTarget=null; joyVec={x:0,y:0};
+  document.getElementById('joystick').classList.remove('show');
+  document.getElementById('resultOverlay').classList.remove('show');
+  document.getElementById('levelupBanner').style.display='none';
+}
 
+// ============================================================
+//  SOLO MODE
+// ============================================================
+window.startSolo=()=>{
+  mode='solo';
+  showScreen('gameScreen'); resizeCanvas();
+  players={}; players[myId]={id:myId,name:progress.name,color:myColor(),pattern:myPattern(),level:progress.level,x:canvasW/2,y:canvasH/2,vx:0,vy:0,alive:true,trail:[],emote:null,emoteTime:0};
+  soloWave=0; soloAlive=true; soloSurvTime=0; soloLaserTimer=0; lasers=[]; particles=[];
+  gameRunning=false; gameOver=false;
+  document.getElementById('joystick').classList.toggle('show',isMobile);
+  document.getElementById('aliveLabel').textContent='WELLE';
+  document.getElementById('timerLabel').textContent='ÜBERLEBT';
+  document.getElementById('rankLabel').textContent='SKINS';
+  setupInput();
+  runCountdown(()=>{ gameRunning=true; soloNextWave(); });
+  startRenderLoop();
+};
+
+function soloNextWave(){
+  soloWave++;
+  if(soloWave>progress.bestWave) progress.bestWave=soloWave;
+  const banner=document.getElementById('waveBanner');
+  banner.textContent='WELLE '+soloWave;
+  banner.classList.remove('show'); void banner.offsetWidth; banner.classList.add('show');
+  // add lasers each wave
+  const target=Math.min(2+soloWave,16);
+  while(lasers.length<target) spawnOneLaser(1+soloWave*0.06);
+  soloLaserTimer=0;
+}
+
+function updateSolo(){
+  const me=players[myId];
+  document.getElementById('aliveCount').textContent='🌊 '+soloWave;
+  document.getElementById('timerDisplay').textContent=Math.floor(soloSurvTime);
+  document.getElementById('myRank').textContent=progress.owned.length;
+  if(!soloAlive) return;
+  soloSurvTime+=1/60; soloLaserTimer+=1/60;
+  // next wave every 12s survived
+  if(soloLaserTimer>12) soloNextWave();
+
+  const {dx,dy}=getInputVector(me.x,me.y);
   me.vx=dx*SPEED; me.vy=dy*SPEED;
   me.x=Math.max(15,Math.min(canvasW-15,me.x+me.vx));
   me.y=Math.max(15,Math.min(canvasH-15,me.y+me.vy));
-  me.trail=me.trail||[];
-  if(Math.abs(me.vx)>0.1||Math.abs(me.vy)>0.1) me.trail.push({x:me.x,y:me.y});
-  if(me.trail.length>40) me.trail.shift();
-  broadcast({type:'move',x:me.x,y:me.y,vx:me.vx,vy:me.vy,trail:me.trail.slice(-12)});
+  me.trail=me.trail||[]; if(Math.abs(me.vx)>0.1||Math.abs(me.vy)>0.1)me.trail.push({x:me.x,y:me.y}); if(me.trail.length>40)me.trail.shift();
 
-  for(let l of lasers){
-    l.x+=Math.cos(l.angle)*l.speed; l.y+=Math.sin(l.angle)*l.speed; l.angle+=l.rotate;
-    if(l.x<0||l.x>canvasW){ l.angle=Math.PI-l.angle; l.x=Math.max(0,Math.min(canvasW,l.x)); }
-    if(l.y<0||l.y>canvasH){ l.angle=-l.angle; l.y=Math.max(0,Math.min(canvasH,l.y)); }
-    for(const p of Object.values(players)){
-      if(!p.alive) continue;
-      if(Math.hypot(p.x-l.x,p.y-l.y)<18){
-        p.alive=false; spawnParticles(p.x,p.y,p.color);
-        if(p.id===myId) broadcast({type:'died',x:p.x,y:p.y});
-      }
-    }
-  }
-  if(Math.random()<0.005) spawnOneLaser();
-  if(lasers.length>12) lasers.shift();
-
-  for(let p of particles){ p.x+=p.vx; p.y+=p.vy; p.vx*=0.92; p.vy*=0.92; p.life-=0.025; }
-  particles=particles.filter(p=>p.life>0);
-
-  checkGameOver();
+  updateLaserPhysics();
+  for(const l of lasers){ if(Math.hypot(me.x-l.x,me.y-l.y)<18){ me.alive=false; soloAlive=false; spawnParticles(me.x,me.y,me.color); endSolo(); } }
+  if(Math.random()<0.004 && lasers.length<16) spawnOneLaser(1+soloWave*0.06);
+  updateParticles();
 }
 
-function checkGameOver(){
-  const alive=Object.values(players).filter(p=>p.alive);
-  if(alive.length<=1 && Object.keys(players).length>0) endGame(false);
-}
-
-function drawLasers(ctx){
-  for(const l of lasers){
-    const x2=l.x-Math.cos(l.angle)*l.length, y2=l.y-Math.sin(l.angle)*l.length;
-    ctx.save(); ctx.globalAlpha=0.18; ctx.strokeStyle=l.color; ctx.lineWidth=l.width*4; ctx.lineCap='round';
-    ctx.beginPath();ctx.moveTo(l.x,l.y);ctx.lineTo(x2,y2);ctx.stroke(); ctx.restore();
-    ctx.save(); ctx.strokeStyle=l.color; ctx.lineWidth=l.width; ctx.shadowBlur=30; ctx.shadowColor=l.color; ctx.globalAlpha=0.7; ctx.lineCap='round';
-    ctx.beginPath();ctx.moveTo(l.x,l.y);ctx.lineTo(x2,y2);ctx.stroke(); ctx.restore();
-    ctx.save(); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.shadowBlur=20; ctx.shadowColor=l.color; ctx.lineCap='round';
-    ctx.beginPath();ctx.moveTo(l.x,l.y);ctx.lineTo(x2,y2);ctx.stroke(); ctx.restore();
-    ctx.save(); ctx.fillStyle='#fff'; ctx.shadowBlur=20; ctx.shadowColor=l.color;
-    ctx.beginPath();ctx.arc(l.x,l.y,l.width/2+2,0,Math.PI*2);ctx.fill(); ctx.restore();
-  }
-}
-function drawParticles(ctx){
-  for(const p of particles){ ctx.save(); ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.shadowBlur=10; ctx.shadowColor=p.color;
-    ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill(); ctx.restore(); }
-}
-function drawPlayers(ctx){
-  for(const p of Object.values(players)){
-    if(!p.alive) continue;
-    const isMe=p.id===myId;
-    if(p.trail&&p.trail.length>2){ ctx.save();
-      for(let i=1;i<p.trail.length;i++){ const t=i/p.trail.length; ctx.globalAlpha=t*0.4; ctx.fillStyle=p.color;
-        ctx.beginPath();ctx.arc(p.trail[i].x,p.trail[i].y,4*t,0,Math.PI*2);ctx.fill(); } ctx.restore(); }
-    ctx.save(); ctx.globalAlpha=0.3; ctx.fillStyle=p.color; ctx.shadowBlur=30; ctx.shadowColor=p.color;
-    ctx.beginPath();ctx.arc(p.x,p.y+4,14,0,Math.PI*2);ctx.fill(); ctx.restore();
-    ctx.save(); ctx.shadowBlur=isMe?25:15; ctx.shadowColor=p.color;
-    if(isMe){ ctx.strokeStyle=p.color; ctx.lineWidth=2; ctx.globalAlpha=0.5; ctx.beginPath();ctx.arc(p.x,p.y,20,0,Math.PI*2);ctx.stroke(); }
-    ctx.globalAlpha=1;
-    const grad=ctx.createRadialGradient(p.x-4,p.y-6,2,p.x,p.y,16);
-    grad.addColorStop(0,'#fff'); grad.addColorStop(0.4,p.color); grad.addColorStop(1,p.color+'88');
-    ctx.fillStyle=grad; ctx.beginPath();ctx.arc(p.x,p.y,16,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#1a1a2e'; ctx.beginPath();ctx.arc(p.x-5,p.y-4,3.5,0,Math.PI*2);ctx.fill();
-    ctx.beginPath();ctx.arc(p.x+5,p.y-4,3.5,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#fff'; ctx.beginPath();ctx.arc(p.x-4,p.y-5,1.5,0,Math.PI*2);ctx.fill();
-    ctx.beginPath();ctx.arc(p.x+6,p.y-5,1.5,0,Math.PI*2);ctx.fill(); ctx.restore();
-    ctx.save(); ctx.font='bold 11px Exo 2,sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#fff';
-    ctx.shadowBlur=8; ctx.shadowColor='#000'; ctx.fillText(p.name.slice(0,10),p.x,p.y-24); ctx.restore();
-    if(p.emote&&Date.now()-p.emoteTime<2500){ ctx.save(); ctx.font='22px serif'; ctx.textAlign='center';
-      const t=(Date.now()-p.emoteTime)/2500; ctx.globalAlpha=Math.max(0,1-t*1.5); ctx.fillText(p.emote,p.x,p.y-40-t*30); ctx.restore(); }
-  }
-}
-
-// ---- END ----
-function endGame(timedOut){
+function endSolo(){
   if(gameOver) return; gameOver=true; gameRunning=false;
-  if(timerInterval) clearInterval(timerInterval);
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
   document.getElementById('joystick').classList.remove('show');
-  const me=players[myId]; const alive=Object.values(players).filter(p=>p.alive);
-  const won=me&&me.alive;
-
-  // Rewards
-  let xpGain=20, coinGain=10;
-  if(won){ xpGain=80; coinGain=50; progress.wins++; }
-  else { xpGain=25+Math.floor(Math.random()*15); coinGain=10+Math.floor(Math.random()*10); }
-  if(timedOut&&won){ xpGain=60; coinGain=40; }
+  // Rewards scale with wave + time
+  const xpGain=soloWave*25 + Math.floor(soloSurvTime*2);
+  const coinGain=soloWave*15 + Math.floor(soloSurvTime);
   progress.games++;
-
   const oldLevel=progress.level;
   progress.xp+=xpGain; progress.coins+=coinGain;
-  while(progress.xp>=xpForLevel(progress.level)){ progress.xp-=xpForLevel(progress.level); progress.level++; }
+  while(progress.xp>=xpForLevel(progress.level)){progress.xp-=xpForLevel(progress.level);progress.level++;}
   const leveledUp=progress.level>oldLevel;
-
-  const overlay=document.getElementById('resultOverlay');
-  const title=document.getElementById('resultTitle');
-  const stats=document.getElementById('resultStats');
-  overlay.classList.add('show');
-  title.className='result-title '+(won?'win':'lose');
-  if(timedOut){ title.textContent='⏰ ZEIT VORBEI!'; title.className='result-title win'; stats.textContent=`${alive.length} überlebt!`; }
-  else if(won){ title.textContent='🏆 GEWONNEN!'; stats.textContent='Letzter Überlebender! 🔥'; }
-  else { title.textContent='💀 AUSGESCHIEDEN!'; stats.textContent=alive.length>0?`${alive.map(p=>p.name).join(', ')} gewinnt!`:'Alle raus!'; }
-
+  persist();
+  const ov=document.getElementById('resultOverlay'), title=document.getElementById('resultTitle'), stats=document.getElementById('resultStats');
+  ov.classList.add('show');
+  title.className='result-title win'; title.textContent='🎯 WELLE '+soloWave;
+  stats.textContent=`Du hast ${Math.floor(soloSurvTime)}s überlebt! Beste Welle: ${progress.bestWave}`;
   document.getElementById('rewardXp').textContent='+'+xpGain;
   document.getElementById('rewardCoin').textContent='+'+coinGain;
   document.getElementById('levelupBanner').style.display=leveledUp?'block':'none';
-  if(leveledUp) document.getElementById('levelupBanner').textContent=`⬆ LEVEL ${progress.level}!`;
+  if(leveledUp)document.getElementById('levelupBanner').textContent=`⬆ LEVEL ${progress.level}!`;
+  document.getElementById('resultBtns').innerHTML=`
+    <button class="btn btn-green" id="rbtn1">🔄 NOCHMAL</button>
+    <button class="btn btn-ghost btn-small" id="rbtn2">🏠 MENÜ</button>`;
+  document.getElementById('rbtn1').onclick=()=>{ cleanupGame(); startSolo(); };
+  document.getElementById('rbtn2').onclick=()=>goMenu();
   renderProfile();
 }
 
-// ---- INIT ----
-window.addEventListener('load',()=>{
-  const adj=['Neon','Laser','Turbo','Hyper','Ultra','Mega','Pixel'];
-  const noun=['Fox','Runner','Tiger','Storm','Ninja','Blaze','Bot'];
-  const name=adj[Math.floor(Math.random()*adj.length)]+noun[Math.floor(Math.random()*noun.length)];
-  document.getElementById('playerNameInput').value=name;
-  progress.name=name;
-  document.getElementById('playerNameInput').addEventListener('input',e=>{ progress.name=e.target.value.trim()||name; renderProfile(); });
+// ============================================================
+//  COUNTDOWN (shared)
+// ============================================================
+function runCountdown(onDone){
+  const overlay=document.getElementById('countdownOverlay'), numEl=document.getElementById('countdownNum');
+  overlay.classList.add('show'); numEl.textContent='3'; numEl.style.color='var(--neon-cyan)';
+  numEl.style.animation='none'; void numEl.offsetWidth; numEl.style.animation='countPop 0.6s ease-out';
+  let c=3;
+  const tick=setInterval(()=>{ c--;
+    if(c>0){numEl.textContent=c;numEl.style.animation='none';void numEl.offsetWidth;numEl.style.animation='countPop 0.6s ease-out';}
+    else{numEl.textContent='GO!';numEl.style.color='var(--neon-green)';numEl.style.animation='none';void numEl.offsetWidth;numEl.style.animation='countPop 0.6s ease-out';clearInterval(tick);setTimeout(()=>{overlay.classList.remove('show');onDone();},700);}
+  },1000);
+}
+
+function startRenderLoop(){
+  if(animFrame) cancelAnimationFrame(animFrame);
+  function loop(){
+    animFrame=requestAnimationFrame(loop);
+    const ctx=document.getElementById('gameCanvas').getContext('2d');
+    drawBackground(ctx);
+    if(gameRunning){ if(mode==='solo') updateSolo(); else updateMulti(); }
+    drawLasers(ctx); drawParticles(ctx); drawPlayers(ctx);
+    if(mode==='multi'){ const a=Object.values(players).filter(p=>p.alive).length; document.getElementById('aliveCount').textContent='👤 '+a; }
+  }
+  loop();
+}
+
+// ============================================================
+//  MULTIPLAYER (Firebase Realtime DB)
+// ============================================================
+async function fbBroadcast(msg){
+  if(!roomRef||!FB.ready) return;
+  const { dbMod }=FB.modules;
+  try { await dbMod.set(dbMod.ref(FB.db,`rooms/${roomCode}/signals/${myId}`),{...msg,t:Date.now()}); } catch(e){}
+}
+
+window.createRoom=async()=>{
+  if(!isOnline){ setError('menuError','Login nötig für Multiplayer.'); return; }
+  mode='multi'; roomCode=randCode(); isHost=true;
+  await joinFirebaseRoom();
+};
+window.joinRoom=async()=>{
+  const code=document.getElementById('joinCodeInput').value.trim().toUpperCase();
+  if(code.length!==4){ setError('menuError','Code muss 4 Zeichen sein!'); return; }
+  if(!isOnline){ setError('menuError','Login nötig für Multiplayer.'); return; }
+  mode='multi'; roomCode=code; isHost=false;
+  // check exists
+  const { dbMod }=FB.modules;
+  const snap=await dbMod.get(dbMod.ref(FB.db,`rooms/${code}`));
+  if(!snap.exists()){ setError('menuError','Room nicht gefunden!'); return; }
+  if(snap.val().started){ setError('menuError','Spiel läuft bereits!'); return; }
+  await joinFirebaseRoom();
+};
+
+async function joinFirebaseRoom(){
+  const { dbMod }=FB.modules;
+  roomRef=dbMod.ref(FB.db,`rooms/${roomCode}`);
+  // register player
+  const meData={id:myId,name:progress.name,color:myColor(),pattern:myPattern(),level:progress.level,x:200,y:250,vx:0,vy:0,alive:true,host:isHost};
+  await dbMod.set(dbMod.ref(FB.db,`rooms/${roomCode}/players/${myId}`),meData);
+  // remove on disconnect
+  dbMod.onDisconnect(dbMod.ref(FB.db,`rooms/${roomCode}/players/${myId}`)).remove();
+  if(isHost){ await dbMod.update(roomRef,{started:false,host:myId,created:Date.now()}); }
+
+  document.getElementById('lobbyCode').textContent=roomCode;
+  showScreen('lobbyScreen');
+
+  // listen players
+  const playersRef=dbMod.ref(FB.db,`rooms/${roomCode}/players`);
+  const ul=dbMod.onValue(playersRef,(snap)=>{
+    const data=snap.val()||{};
+    // merge for lobby + game (keep local pos for me)
+    for(const [id,pd] of Object.entries(data)){
+      if(id===myId){ if(!players[id]) players[id]={...pd,trail:[],emote:null,emoteTime:0}; }
+      else {
+        if(!players[id]) players[id]={...pd,trail:[],emote:null,emoteTime:0};
+        else { players[id].x=pd.x; players[id].y=pd.y; players[id].alive=pd.alive; players[id].name=pd.name; players[id].color=pd.color; if(pd.trail)players[id].trail=pd.trail; }
+      }
+    }
+    // remove gone players
+    for(const id of Object.keys(players)){ if(!data[id]&&id!==myId) delete players[id]; }
+    if(!gameRunning) renderPlayersList();
+  });
+  roomListeners.push(()=>dbMod.off(playersRef));
+
+  // listen room state (start)
+  const stateRef=dbMod.ref(FB.db,`rooms/${roomCode}/started`);
+  const sl=dbMod.onValue(stateRef,(snap)=>{ if(snap.val()===true && !gameRunning && mode==='multi'){ beginMultiGame(); } });
+  roomListeners.push(()=>dbMod.off(stateRef));
+
+  // listen signals (emotes/deaths)
+  const sigRef=dbMod.ref(FB.db,`rooms/${roomCode}/signals`);
+  const gl=dbMod.onValue(sigRef,(snap)=>{
+    const sigs=snap.val()||{};
+    for(const [from,msg] of Object.entries(sigs)){
+      if(from===myId) continue;
+      if(msg.type==='emote'&&players[from]){ players[from].emote=msg.emote; players[from].emoteTime=Date.now(); addChatMsg(players[from].name||'?',msg.emote); }
+    }
+  });
+  roomListeners.push(()=>dbMod.off(sigRef));
+}
+
+function leaveFirebaseRoom(){
+  if(!roomRef||!FB.ready){ roomRef=null; return; }
+  const { dbMod }=FB.modules;
+  roomListeners.forEach(off=>off()); roomListeners=[];
+  try {
+    dbMod.remove(dbMod.ref(FB.db,`rooms/${roomCode}/players/${myId}`));
+    // if host leaves, clear room
+    if(isHost) dbMod.remove(roomRef);
+  } catch(e){}
+  roomRef=null;
+}
+
+window.leaveRoom=()=>{ leaveFirebaseRoom(); players={}; goMenu(); };
+
+window.copyCode=()=>{ if(navigator.clipboard)navigator.clipboard.writeText(roomCode); setError('lobbyError','Code kopiert: '+roomCode,true); };
+
+function renderPlayersList(){
+  const list=document.getElementById('playersList'); const pArr=Object.values(players); list.innerHTML='';
+  for(let i=0;i<8;i++){
+    const p=pArr[i];
+    if(p){ list.innerHTML+=`<div class="player-slot filled ${p.id===myId?'me':''}">
+      <div class="player-avatar-sm">${avatarSVG(p.color,32,p.pattern)}</div>
+      <div class="player-info"><div class="player-name" style="color:${p.color}">${p.name}</div>
+      <div class="player-lvl">Lvl ${p.level||1} ${p.id===myId?'• DU':''}${p.host?' • HOST':''}</div></div></div>`; }
+    else list.innerHTML+=`<div class="player-slot"><span class="slot-empty">WARTEN...</span></div>`;
+  }
+  // FIX: min 2 players to start
+  const count=pArr.length;
+  const btn=document.getElementById('startBtn');
+  const hint=document.getElementById('lobbyHint');
+  if(!isHost){ btn.classList.add('btn-disabled'); hint.textContent='Warte auf Host...'; }
+  else if(count<2){ btn.classList.add('btn-disabled'); hint.textContent=`Mindestens 2 Spieler (aktuell ${count})`; }
+  else { btn.classList.remove('btn-disabled'); hint.textContent='Bereit zum Starten!'; }
+}
+
+window.startGame=async()=>{
+  if(!isHost){ setError('lobbyError','Nur der Host kann starten.'); return; }
+  if(Object.keys(players).length<2){ setError('lobbyError','Mindestens 2 Spieler nötig!'); return; }
+  const { dbMod }=FB.modules;
+  await dbMod.update(roomRef,{started:true});
+};
+
+function beginMultiGame(){
+  showScreen('gameScreen'); resizeCanvas();
+  gameRunning=false; gameOver=false; lasers=[]; particles=[];
+  document.getElementById('joystick').classList.toggle('show',isMobile);
+  document.getElementById('aliveLabel').textContent='ALIVE';
+  document.getElementById('timerLabel').textContent='SEKUNDEN';
+  document.getElementById('rankLabel').textContent='RANK';
+  Object.values(players).forEach((p,i)=>{ p.alive=true; p.trail=[]; p.x=80+(i%4)*Math.floor((canvasW-160)/3); p.y=canvasH*0.3+Math.floor(i/4)*canvasH*0.35; p.vx=0;p.vy=0; });
+  setupInput();
+  startRenderLoop();
+  runCountdown(()=>{
+    gameRunning=true; gameTimer=60;
+    document.getElementById('timerDisplay').textContent='60';
+    // only host spawns lasers and syncs them
+    if(isHost){ const n=2+Math.floor(Object.keys(players).length/2); for(let i=0;i<n;i++)spawnOneLaser(); syncLasers(); }
+    timerInterval=setInterval(()=>{ if(!gameRunning)return; gameTimer--; document.getElementById('timerDisplay').textContent=gameTimer; if(gameTimer<=0)endMulti(true); },1000);
+  });
+  // listen to laser sync (non-host)
+  if(!isHost){
+    const { dbMod }=FB.modules;
+    const lref=dbMod.ref(FB.db,`rooms/${roomCode}/lasers`);
+    const ll=dbMod.onValue(lref,(snap)=>{ const d=snap.val(); if(d&&!isHost) lasers=d; });
+    roomListeners.push(()=>dbMod.off(lref));
+  }
+}
+
+let laserSyncTimer=0;
+async function syncLasers(){
+  if(!isHost||!roomRef) return;
+  const { dbMod }=FB.modules;
+  try { await dbMod.set(dbMod.ref(FB.db,`rooms/${roomCode}/lasers`),lasers); } catch(e){}
+}
+
+let movePushTimer=0;
+function updateMulti(){
+  const me=players[myId];
+  if(me&&me.alive){
+    const {dx,dy}=getInputVector(me.x,me.y);
+    me.vx=dx*SPEED; me.vy=dy*SPEED;
+    me.x=Math.max(15,Math.min(canvasW-15,me.x+me.vx));
+    me.y=Math.max(15,Math.min(canvasH-15,me.y+me.vy));
+    me.trail=me.trail||[]; if(Math.abs(me.vx)>0.1||Math.abs(me.vy)>0.1)me.trail.push({x:me.x,y:me.y}); if(me.trail.length>40)me.trail.shift();
+    // push position ~12/s
+    movePushTimer++;
+    if(movePushTimer>=5 && roomRef){ movePushTimer=0; const { dbMod }=FB.modules;
+      dbMod.update(dbMod.ref(FB.db,`rooms/${roomCode}/players/${myId}`),{x:Math.round(me.x),y:Math.round(me.y),alive:me.alive,trail:me.trail.slice(-8)}).catch(()=>{}); }
+  }
+
+  // host runs laser physics + collision authority for spawning
+  if(isHost){
+    updateLaserPhysics();
+    if(Math.random()<0.005) spawnOneLaser();
+    if(lasers.length>12) lasers.shift();
+    laserSyncTimer++; if(laserSyncTimer>=4){ laserSyncTimer=0; syncLasers(); }
+  }
+
+  // everyone checks own collision
+  if(me&&me.alive){
+    for(const l of lasers){ if(Math.hypot(me.x-l.x,me.y-l.y)<18){ me.alive=false; spawnParticles(me.x,me.y,me.color);
+      if(roomRef){ const { dbMod }=FB.modules; dbMod.update(dbMod.ref(FB.db,`rooms/${roomCode}/players/${myId}`),{alive:false}).catch(()=>{}); } } }
+  }
+  updateParticles();
+
+  // game over check
+  const alive=Object.values(players).filter(p=>p.alive);
+  if(alive.length<=1 && Object.keys(players).length>=2) endMulti(false);
+}
+
+function endMulti(timedOut){
+  if(gameOver) return; gameOver=true; gameRunning=false;
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  document.getElementById('joystick').classList.remove('show');
+  const me=players[myId]; const alive=Object.values(players).filter(p=>p.alive);
+  const won=me&&me.alive;
+  let xpGain=won?80:30, coinGain=won?50:15;
+  if(won)progress.wins++; progress.games++;
+  const oldLevel=progress.level; progress.xp+=xpGain; progress.coins+=coinGain;
+  while(progress.xp>=xpForLevel(progress.level)){progress.xp-=xpForLevel(progress.level);progress.level++;}
+  const leveledUp=progress.level>oldLevel; persist();
+  const ov=document.getElementById('resultOverlay'),title=document.getElementById('resultTitle'),stats=document.getElementById('resultStats');
+  ov.classList.add('show');
+  title.className='result-title '+(won?'win':'lose');
+  if(timedOut){title.textContent='⏰ ZEIT VORBEI!';title.className='result-title win';stats.textContent=`${alive.length} überlebt!`;}
+  else if(won){title.textContent='🏆 GEWONNEN!';stats.textContent='Letzter Überlebender! 🔥';}
+  else {title.textContent='💀 AUSGESCHIEDEN!';stats.textContent=alive.length>0?`${alive.map(p=>p.name).join(', ')} gewinnt!`:'Alle raus!';}
+  document.getElementById('rewardXp').textContent='+'+xpGain;
+  document.getElementById('rewardCoin').textContent='+'+coinGain;
+  document.getElementById('levelupBanner').style.display=leveledUp?'block':'none';
+  if(leveledUp)document.getElementById('levelupBanner').textContent=`⬆ LEVEL ${progress.level}!`;
+  document.getElementById('resultBtns').innerHTML=`
+    <button class="btn btn-cyan" id="rbtn1">🔄 LOBBY</button>
+    <button class="btn btn-ghost btn-small" id="rbtn2">🏠 MENÜ</button>`;
+  document.getElementById('rbtn1').onclick=()=>backToMultiLobby();
+  document.getElementById('rbtn2').onclick=()=>goMenu();
   renderProfile();
-  showScreen('menuScreen');
-});
+}
+
+async function backToMultiLobby(){
+  cleanupGame();
+  if(isHost && roomRef){ const { dbMod }=FB.modules; await dbMod.update(roomRef,{started:false}); await dbMod.remove(dbMod.ref(FB.db,`rooms/${roomCode}/lasers`)); }
+  // reset my alive
+  if(players[myId]){players[myId].alive=true;}
+  if(roomRef){ const { dbMod }=FB.modules; dbMod.update(dbMod.ref(FB.db,`rooms/${roomCode}/players/${myId}`),{alive:true}).catch(()=>{}); }
+  showScreen('lobbyScreen'); renderPlayersList();
+}
+
+// ============================================================
+//  BOOT
+// ============================================================
+async function boot(){
+  const ok=await initFirebase();
+  const hint=document.getElementById('firebaseHint');
+  if(ok){
+    isOnline=true;
+    const { authMod }=FB.modules;
+    authMod.onAuthStateChanged(FB.auth, async(user)=>{
+      if(user){
+        FB.user=user; isOnline=true;
+        await loadProgress(user.uid);
+        if(!progress.name) progress.name=user.email?user.email.split('@')[0]:'Player';
+        document.getElementById('loadingScreen').style.display='none';
+        enterMenu();
+      } else {
+        FB.user=null;
+        document.getElementById('loadingScreen').style.display='none';
+        showScreen('authScreen');
+      }
+    });
+    hint.textContent='✓ Firebase verbunden – Login & Online-Multiplayer aktiv.';
+  } else {
+    isOnline=false;
+    document.getElementById('loadingScreen').style.display='none';
+    showScreen('authScreen');
+    hint.innerHTML='⚠ Firebase noch nicht konfiguriert. Du kannst als Gast Solo spielen.<br>Trage deine Firebase-Config im Code ein für Login & Online.';
+  }
+}
+boot();
 </script>
 </body>
 </html>
